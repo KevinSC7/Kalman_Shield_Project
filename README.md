@@ -1,8 +1,8 @@
-### Proyecto KALMAN con IMU y GPS
+# Proyecto KALMAN con IMU y GPS
 
 ## DESCRIPCIÓN DEL PROYECTO
 
-# OBJETIVO
+### OBJETIVO
 -Desarrollo de un dispositivo configurable por interfaz web compuesto por un sensor 
 inercial, GPS y un microcontrolador con ciertas herramientas matemáticas integradas
 que funciona como un shield para otros proyectos.
@@ -13,7 +13,7 @@ proyectos de estabilización.
 -También se podría aplicar a otros proyectos según necesidades de acuerdo a su 
 versatilidad y escalabilidad
 
-# RAZON DE SER
+### RAZON DE SER
 
 -Este dispositivo, basado en el ESP8266-12, funciona como un shield para otros 
 microcontroladores como Arduino, FPGAs...entre otros, el cual se adapta a, y si es 
@@ -25,7 +25,7 @@ filtros de Kalman o que necesitaran hacer uso de otras herramientas matemáticas
 -Permite implementar estos componentes ahorrando tiempo de desarrollo al no tener 
 la necesidad de comprender su funcionamiento interno.
 
-# EJEMPLOS DE APLICACION DEL SHIELD
+### EJEMPLOS DE APLICACION DEL SHIELD
 
 -Tracking de vehiculos
 
@@ -37,7 +37,7 @@ la necesidad de comprender su funcionamiento interno.
 
 ## MANUAL DE USUARIO
 
-# PRIMEROS PASOS
-# MANDAR DATOS POR SERIAL
-# CARGAR Y DESCARGAR POR INTERFAZ
-# ETC 
+### PRIMEROS PASOS
+### MANDAR DATOS POR SERIAL
+### CARGAR Y DESCARGAR POR INTERFAZ
+### ETC 
