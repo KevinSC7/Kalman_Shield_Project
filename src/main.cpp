@@ -12,6 +12,7 @@ const char* ssid = "KalmanShield";		//Nombre baliza AP por defecto (RF1)
 const char* password = "KalmanShield";	//8 caracteres (Req. seguridad) y por defecto esa contraseña (RF1)
 String currentSSID = ssid;
 String currentPSW = password;
+bool autorizacion = false;
 
 //ESTO ES CODIGO SEPARADO, TIENE QUE ESTAR ANTES DE LAS VARIABLES GLOBALES
 #include "Data/config.h"		//Contiene la configuración del AP (IPAddress)
@@ -20,6 +21,9 @@ String currentPSW = password;
 #include "Data/SSID.h"			//Control de datos del AP sobre SPIFFS
 
 #include "InterfacesArduino/login.h"
+#include "InterfacesArduino/gestionDatos.h"
+#include "InterfacesArduino/confirmConfig.h"
+#include "InterfacesArduino/datosConfiguraciones.h"
 
 usuario *miUsuario;						//Ver struct en usuarios.h
 
@@ -39,7 +43,7 @@ void setup() {
 	//CONFIGURAR Y LANZAR EL AP
     WiFi.mode(WIFI_AP);								//Establecer modo AP
 	WiFi.softAPConfig(local_IP, gateway, subnet);	//Configuración (Poner antes de encender el AP, sino no funciona)
-	WiFi.softAP(ssid, password);					//Lanzamiento de la baliza AP
+	WiFi.softAP(currentSSID, currentPSW, 1, 0, 1);	//Lanzamiento de la baliza AP (ssid, psw, ch, hidden, max_clients)
 													//Si despues de enceder la baliza se configura no conecta
 	Serial.println("AP configurado y lanzado");
 	//PREPARAR DATOS
@@ -74,7 +78,8 @@ void setup() {
 		String pswUsuario = request->arg("psw");
 		if(nombreUsuario == miUsuario->user){
 			if(pswUsuario == miUsuario->psw){
-				response->print("<p>gestionDatos()</p>");
+				autorizacion = true;
+				request->redirect("/getGestion");
 			}else{
 				response->print(getLogin(2));//Llamada a la intefaz login con error en psw tipoError = 2
 			}
@@ -85,13 +90,107 @@ void setup() {
         request->send(response);
     });
 
+	server.on("/logout", HTTP_POST, [](AsyncWebServerRequest *request){	//http:IP/logout
+		autorizacion=false;
+		request->redirect("/getLogin");
+    });
+
+	server.on("/getGestion", HTTP_GET, [] (AsyncWebServerRequest *request) {	//http:IP/getGestion
+		AsyncResponseStream *response = request->beginResponseStream("text/html");
+		if(autorizacion){
+			response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 0));	//Llamada a la intefaz gestion datos sin errores tipoError = 0
+			request->send(response);
+		}else{
+			request->redirect("/getLogin");
+		}
+    });
+
+	server.on("/postSSID", HTTP_POST, [](AsyncWebServerRequest *request){	//http:IP/postSSID
+		AsyncResponseStream *response = request->beginResponseStream("text/html");
+		if(!autorizacion)request->redirect("/getLogin");
+		String d1 = request->arg("SSID");
+		String d2 = request->arg("psw");
+		String d3 = request->arg("retype");
+		String t ="";
+		if(d2 != d3){
+			response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 1));
+			request->send(response);
+		} 
+		t.concat((char)191);t+="Estas seguro de que quieres cambiar la configuraci";t.concat((char)243);t+="n del AP?";
+		
+		response->print(getConfirm(t, d1, d2));
+		request->send(response);
+		
+    });
+
+	server.on("/postSSIDConfirm", HTTP_POST, [](AsyncWebServerRequest *request){	//http:IP/postSSIDConfirm
+		if(!autorizacion)request->redirect("/getLogin");
+		String b = request->arg("env");
+		if(b == "Confirmar"){
+			String nssid = request->arg("ssid");
+			String npsw = request->arg("psw");
+			Serial.println("nssid: "+nssid+" npsw: "+npsw);
+		}
+		
+		request->redirect("/getGestion");
+    });
+
+	server.on("/postChangeUser", HTTP_POST, [](AsyncWebServerRequest *request){	//http:IP/postChangeUser
+		AsyncResponseStream *response = request->beginResponseStream("text/html");
+		if(!autorizacion)request->redirect("/getLogin");
+		String u = request->arg("Usuario");
+		String n = request->arg("NombreApellidos");
+		String p = request->arg("psw");
+		String r = request->arg("retype");
+		String t = "";
+		t.concat((char)191);t+="Estas seguro de que quieres cambiar el nombre del usuario a: "+u+
+		", tu nombre y apellidos a:"+n+" y la contrase";t.concat((char)241);t+="a del login?";
+		if(p != r){
+			response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 2));	//Llamada a la intefaz gestion datos con error mal retypr tipoError = 0
+			request->send(response);
+		}
+		String datos[]={t, u, n, p, r};
+		response->print(getConfirm(datos));
+		request->send(response);
+    });
+
+	server.on("/postChangeUserConfirm", HTTP_POST, [](AsyncWebServerRequest *request){	//http:IP/postChangeUserConfirm
+		if(!autorizacion)request->redirect("/getLogin");
+		String b = request->arg("env");
+		if(b == "Confirmar"){
+			String nuser = request->arg("nuser");
+			String nya = request->arg("nya");
+			String psw = request->arg("psw");
+			Serial.println("nuser: "+nuser+" nya: "+nya+" psw: "+psw);
+		}
+		
+		request->redirect("/getGestion");
+    });
+
+	server.on("/postConfig", HTTP_POST, [](AsyncWebServerRequest *request){	//http:IP/postConfig
+		AsyncResponseStream *response = request->beginResponseStream("text/html");
+		if(!autorizacion)request->redirect("/getLogin");
+		String accion = request->arg("accion");
+		if(accion == "Configuraciones"){
+			response->print(getDatosConfiguraciones());
+		}else if(accion == "Ejecutar"){
+			response->print("");
+		}else if(accion == "Guardar"){
+			response->print("");
+		}else{
+			request->send(401);
+		}
+		
+		request->send(response);
+    });
+
     server.onNotFound(notFound);
 
     server.begin();
 }
 
 void loop() {
-	
+	if(WiFi.softAPgetStationNum() == 0)autorizacion=false;//Si se desconecta se cierra la sesion
 }
 
 
