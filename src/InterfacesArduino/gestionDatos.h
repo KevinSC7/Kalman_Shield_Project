@@ -14,7 +14,7 @@ String getGestionDatos(String _ssid, String _user, String _NyA, String _pswUser,
     
     html+="<tr style='vertical-align: top;'><th><hr><p><b>Configuraci";html.concat((char)243);html+="n AP</b></p>";
     html+="<form method='post' action='/postSSID'><div style='width: 40%;' align='right'><label for='SSID'>Nueva SSID*:</label></div>";
-    html+="<div style='width: 60%;' align='left'><input type='text' maxlength='20' required name='SSID' value='";
+    html+="<div style='width: 60%;' align='left'><input type='text' maxlength='20' minlength='1' required name='SSID' value='";
     html+=_ssid;
     html+="'></div>";
     html+="<div style='width: 40%;' align='right'><label for='psw'>Nueva contrase";html.concat((char)241);html+="a*:</label></div>";
@@ -25,6 +25,9 @@ String getGestionDatos(String _ssid, String _user, String _NyA, String _pswUser,
     html+="<div style='color: red; width: 100%;'>";
     if(tipoError == 1){
         html+="Retype incorrecto";
+    }
+    if(tipoError == 3){
+        html+="Fallo al establecer los datos";
     }
     html+="</div>";
 
@@ -52,7 +55,7 @@ String getGestionDatos(String _ssid, String _user, String _NyA, String _pswUser,
     html+="<th><hr><p><b>Configuraci";html.concat((char)243);html+="n Usuario</b></p>";
     html+=" <form method='post' action='/postChangeUser'>";
     html+="<div style='width: 40%;' align='right'><label for='Usuario'>Usuario*:</label></div>";
-    html+="<div style='width: 60%;' align='left'><input type='text' maxlength='20' required name='Usuario' value='";
+    html+="<div style='width: 60%;' align='left'><input type='text' maxlength='20' minlength='1' required name='Usuario' value='";
     html+=_user;
     html+="'></div>";
     html+="<div style='width: 40%;' align='right'><label for='NombreApellidos'>Nombre y apellidos:</label></div>";
@@ -60,17 +63,20 @@ String getGestionDatos(String _ssid, String _user, String _NyA, String _pswUser,
     html+=_NyA;
     html+="'></div>";
     html+="<div style='width: 40%;' align='right'><label for='pswActual'>Contrase";html.concat((char)241);html+="a actual:</label></div>";
-    html+="<div style='width: 60%;' align='left'><input type='text' readonly maxlength='20' class='protegido' value='";
+    html+="<div style='width: 60%;' align='left'><input type='text' readonly class='protegido' value='";
     html+=_pswUser;
     html+="' name='pswActual'></div>";
     html+="<hr style='width: 100%; margin-bottom: 10px;'><div style='width: 40%;' align='right'><label for='psw'>Nueva contrase";html.concat((char)241);html+="a*:</label></div>";
-    html+="<div style='width: 60%;' align='left'><input type='password' maxlength='20' required name='psw'></div>";
+    html+="<div style='width: 60%;' align='left'><input type='password' maxlength='20' minlength='8' required name='psw'></div>";
     html+="<div style='width: 40%;' align='right'><label for='retype'>Retype*:</label></div>";
-    html+="<div style='width: 60%;' align='left'><input type='password' maxlength='20' required name='retype'></div>";
+    html+="<div style='width: 60%;' align='left'><input type='password' maxlength='20' minlength='8' required name='retype'></div>";
     html+="<div style='width: 100%;'><input type='submit' value='Establecer'></div>";
     html+="<div style='color: red; width: 100%;'>";
     if(tipoError == 2){
         html+="Retype incorrecto";
+    }
+    if(tipoError == 4){
+        html+="Fallo al establecer los datos";
     }
     html+="</div></form>";
     html+="</th></tr></table><hr>";

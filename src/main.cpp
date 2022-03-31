@@ -82,12 +82,12 @@ void setup() {
 				request->redirect("/getGestion");
 			}else{
 				response->print(getLogin(2));//Llamada a la intefaz login con error en psw tipoError = 2
+				request->send(response);
 			}
 		}else{
 			response->print(getLogin(1));//Llamada a la intefaz login con error en user tipoError = 1
+			request->send(response);
 		}
-		
-        request->send(response);
     });
 
 	server.on("/logout", HTTP_POST, [](AsyncWebServerRequest *request){	//http:IP/logout
@@ -107,64 +107,105 @@ void setup() {
 
 	server.on("/postSSID", HTTP_POST, [](AsyncWebServerRequest *request){	//http:IP/postSSID
 		AsyncResponseStream *response = request->beginResponseStream("text/html");
-		if(!autorizacion)request->redirect("/getLogin");
-		String d1 = request->arg("SSID");
-		String d2 = request->arg("psw");
-		String d3 = request->arg("retype");
-		String t ="";
-		if(d2 != d3){
-			response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 1));
-			request->send(response);
-		} 
-		t.concat((char)191);t+="Estas seguro de que quieres cambiar la configuraci";t.concat((char)243);t+="n del AP?";
-		
-		response->print(getConfirm(t, d1, d2));
-		request->send(response);
-		
+		if(!autorizacion){
+			request->redirect("/getLogin");
+		}else{
+			String d1 = request->arg("SSID");
+			String d2 = request->arg("psw");
+			String d3 = request->arg("retype");
+			
+			if(d2 != d3){
+				response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 1));
+				request->send(response);
+			}else{
+				String t ="";
+				t.concat((char)191);t+="Estas seguro de que quieres cambiar la configuraci";t.concat((char)243);t+="n del AP?";
+				t+="El AP se reestablecer";t.concat((char)225);t+=" y tendr";t.concat((char)225);t+=" que volver a conectarse con los datos nuevos.";
+				response->print(getConfirm(t, d1, d2));
+				request->send(response);
+			}
+		}
     });
 
 	server.on("/postSSIDConfirm", HTTP_POST, [](AsyncWebServerRequest *request){	//http:IP/postSSIDConfirm
-		if(!autorizacion)request->redirect("/getLogin");
-		String b = request->arg("env");
-		if(b == "Confirmar"){
-			String nssid = request->arg("ssid");
-			String npsw = request->arg("psw");
-			Serial.println("nssid: "+nssid+" npsw: "+npsw);
+		AsyncResponseStream *response = request->beginResponseStream("text/html");
+		//No se puede poner asi -> if(!autorizacion)request->redirect("/getLogin"); hace tb lo siguiente
+		//Puede hacer dos request->send() y eso esta mal
+		if(!autorizacion){
+			request->redirect("/getLogin");
+		}else{
+			String b = request->arg("env");
+			if(b == "Confirmar"){
+				String nssid = request->arg("ssid");
+				String npsw = request->arg("psw");
+
+				if(setDatosAP(nssid, npsw)){
+					currentSSID=getSSID(); currentPSW=getPSW();
+					request->redirect("/getGestion");
+					WiFi.softAP(currentSSID, currentPSW, 1, 0, 1);
+				}else{
+					Serial.println("No se pudo establecer nuevos datos de configuracion AP");
+					response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 3));
+					request->send(response);
+				}
+			}else{
+				request->redirect("/getGestion");
+			}
 		}
-		
-		request->redirect("/getGestion");
     });
 
 	server.on("/postChangeUser", HTTP_POST, [](AsyncWebServerRequest *request){	//http:IP/postChangeUser
 		AsyncResponseStream *response = request->beginResponseStream("text/html");
-		if(!autorizacion)request->redirect("/getLogin");
-		String u = request->arg("Usuario");
-		String n = request->arg("NombreApellidos");
-		String p = request->arg("psw");
-		String r = request->arg("retype");
-		String t = "";
-		t.concat((char)191);t+="Estas seguro de que quieres cambiar el nombre del usuario a: "+u+
-		", tu nombre y apellidos a:"+n+" y la contrase";t.concat((char)241);t+="a del login?";
-		if(p != r){
-			response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 2));	//Llamada a la intefaz gestion datos con error mal retypr tipoError = 0
-			request->send(response);
+		if(!autorizacion){
+			request->redirect("/getLogin");
+		}else{
+			String u = request->arg("Usuario");
+			String n = request->arg("NombreApellidos");
+			String p = request->arg("psw");
+			String r = request->arg("retype");
+			if(p != r){
+				response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 2));	//Llamada a la intefaz gestion datos con error mal retypr tipoError = 0
+				request->send(response);
+			}else{
+				String t = "";
+				t.concat((char)191);t+="Estas seguro de que quieres cambiar el nombre del usuario a: "+u+
+				", tu nombre y apellidos a: "+n+" y la contrase";t.concat((char)241);t+="a del login?";
+				String datos[]={t, u, n, p, r};
+				response->print(getConfirm(datos));
+				request->send(response);
+			}
 		}
-		String datos[]={t, u, n, p, r};
-		response->print(getConfirm(datos));
-		request->send(response);
     });
 
 	server.on("/postChangeUserConfirm", HTTP_POST, [](AsyncWebServerRequest *request){	//http:IP/postChangeUserConfirm
-		if(!autorizacion)request->redirect("/getLogin");
-		String b = request->arg("env");
-		if(b == "Confirmar"){
-			String nuser = request->arg("nuser");
-			String nya = request->arg("nya");
-			String psw = request->arg("psw");
-			Serial.println("nuser: "+nuser+" nya: "+nya+" psw: "+psw);
+		AsyncResponseStream *response = request->beginResponseStream("text/html");
+		if(!autorizacion){
+			request->redirect("/getLogin");
+		}else{
+			String b = request->arg("env");
+			if(b == "Confirmar"){
+				String nuser = request->arg("nuser");
+				String nya = request->arg("nya");
+				String psw = request->arg("psw");
+				if(setDatosUsuario(nuser, nya, psw)){
+					miUsuario=getUser();
+					if(miUsuario){
+						Serial.println(miUsuario->user);
+						Serial.println(miUsuario->nombreApellidos);
+						Serial.println(miUsuario->psw);
+					}else{
+						Serial.println("Error: Fallo en getUser");
+					}
+					request->redirect("/getGestion");
+				}else{
+					Serial.println("No se pudo establecer nuevos datos de configuracion del usuario");
+					response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 4));
+					request->send(response);
+				}
+			}else{
+				request->redirect("/getGestion");
+			}
 		}
-		
-		request->redirect("/getGestion");
     });
 
 	server.on("/postConfig", HTTP_POST, [](AsyncWebServerRequest *request){	//http:IP/postConfig

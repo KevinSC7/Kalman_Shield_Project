@@ -53,3 +53,12 @@ usuario* getUser(){ //Debe existir como minimo un usuario o no existe el fichero
   return u;                                           //Existe el usuario lo retorna
 }
 
+bool setDatosUsuario(String _user, String _NyA, String _psw){
+  if(_user.isEmpty() || _psw.length()<8 || _user.length()>20 || _psw.length()>20 || _NyA.length()>20) return false;
+  File file = LittleFS.open("/MisUsuarios.txt", "w+");
+  if(!file)return false;
+  file.println(_user+" "+_NyA+" "+_psw);
+  file.close();
+  return true;
+}
+
