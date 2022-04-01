@@ -1,4 +1,16 @@
-String getGestionDatos(String _ssid, String _user, String _NyA, String _pswUser, byte tipoError){
+String getGestionDatos(String _ssid, String _user, String _NyA, String _pswUser, byte tipoError, String _config){
+    bool sin=false, ib=false, gb=false, ip=false, fus=false;
+    String t="";
+    if(!_config.isEmpty()){
+        if(_config[0]=='1')sin = true;
+        if(_config[1]=='1')ib = true;
+        if(_config[2]=='1')gb = true;
+        if(_config[3]=='1')ip = true;
+        if(_config[4]=='1')fus =true;
+        t = _config.substring(6);
+    }
+    
+    
     String html="<html><meta name='viewport' content='width=320, initial-scale=0.7'><head>";
     html+="<title>GESTION DE DATOS</title></head>";
 
@@ -31,24 +43,31 @@ String getGestionDatos(String _ssid, String _user, String _NyA, String _pswUser,
     }
     html+="</div>";
 
-    html+="</form></th><th style='width: 25%; text-align: left;'><hr><p><b>Configuraci";html.concat((char)241);html+="n herramientas</b></p><hr>";
+    html+="</form></th><th style='width: 25%; text-align: left;'><hr><p><b>Configuraci";html.concat((char)243);html+="n herramientas</b></p><hr>";
     html+="<form method='post' action='/postConfig'>";
-    html+="<input type='radio' onchange='showsText(this);' name='tipoEnvio' id='asin' value='0' checked>";
-    html+="<label for='asin'>Env";html.concat((char)237);html+="o asincr";html.concat((char)241);html+="nico de datos</label><br>";
-    html+="<input type='radio' onchange='showsText(this);' name='tipoEnvio' id='sin' value='1'>";
+    html+="<input type='radio' onchange='showsText(this);' name='tipoEnvio' id='asin' value='0'"; if(!sin)html+=" checked";html+=">";
+    html+="<label for='asin'>Env";html.concat((char)237);html+="o asincr";html.concat((char)243);html+="nico de datos</label><br>";
+    html+="<input type='radio' onchange='showsText(this);' name='tipoEnvio' id='sin' value='1'";if(sin)html+=" checked";html+=">";
     html+="<label for='sin'>Env";html.concat((char)237);html+="o s";html.concat((char)237);html+="ncrono de datos</label><br>";
-    html+="<input type='text' id='setTime' placeholder='Tiempo en milisegundos (min:100ms=0.1s)' hidden>";
-    html+="<hr><input type='checkbox' name='envio' id='ib' value='0'>";
+    html+="<input type='number' name='setTime' id='setTime' value='";html+=t;html+="' placeholder='Tiempo en milisegundos (min:100ms=0.1s)' ";if(!sin)html+=" hidden";html+=">";
+    html+="<hr><input type='checkbox' name='ib' id='ib' value='ok'";if(ib)html+=" checked";html+=">";
     html+="<label for='ib'>Datos IMU en bruto</label><br>";
-    html+="<input type='checkbox' name='envio' id='gb' value='1'><label for='gb'>Datos GPS en bruto</label>";
-    html+=" <br><input type='checkbox' name='envio' id='ip' value='2'>";
+    html+="<input type='checkbox' name='gb' id='gb' value='ok'";if(gb)html+=" checked";html+="><label for='gb'>Datos GPS en bruto</label>";
+    html+=" <br><input type='checkbox' name='ip' id='ip' value='ok'"; if(ip)html+=" checked";html+=">";
     html+="<label for='ip'>Datos del IMU procesados con Kalman</label><br>";
-    html+="<input type='checkbox' name='envio' id='fus' value='2'>";
+    html+="<input type='checkbox' name='fus' id='fus' value='ok'";if(fus)html+=" checked";html+=">";
     html+="<label for='fus'>Fusion datos IMU+GPS con Kalman</label>";
     html+="<hr><input type='submit' class='boton1' name='accion' value='Ejecutar'>";
     html+="<input type='submit' class='boton1' name='accion' value='Guardar'>";
     html+="<input type='submit' class='boton1' name='accion' value='Configuraciones'></form>";
-
+    html+="<div style='color: red; width: 100%;'>";
+    if(tipoError == 5){
+        html+="No se pudo guardar. Máximo de configuraciones: 10";
+    }
+    if(tipoError == 6){
+        html+="No se guard";html.concat((char)243);html+=". Escoja minimo una herramienta(checkbox).";
+    }
+    html+="</div>";
     html+="<hr><p style='color: rgb(82, 24, 216); width: 100%; font-size: 15px;'>Formato de envio por serial:</p>";
     html+="<div id='rawData' style='color: #094709; width: 100%;'>/rawData/...</div></th>";
 

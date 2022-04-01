@@ -1,3 +1,6 @@
+IPAddress local_IP(192,168,4,22);	//IP para acceder al servidor (el del ESP)
+IPAddress gateway(192,168,1,1);		//Como AP suele ser irrelevante
+IPAddress subnet(255,255,255,0);	//Máscara de red
 
 bool APbegin(){
     byte timeOut = 0;
@@ -62,5 +65,21 @@ bool setDatosAP(String nuevaSSID, String nuevaPSW){
     file.print(" ");
     file.println(nuevaPSW);
     file.close();
+    return true;
+}
+
+bool resetDatosAP(){
+    Serial.println("resetAP");
+    if(!APbegin())return false;
+    LittleFS.remove("/DatosAP.txt");
+    if(!APbegin()) {
+		Serial.println("Error: en SPIFFS al cargar datos del AP");
+        return false;
+	}else{
+		currentSSID=getSSID(); currentPSW=getPSW();
+		Serial.println("Actual SSID="+currentSSID+" Actual psw="+currentPSW);
+	}
+    WiFi.softAP(currentSSID, currentPSW, 1, 0, 1);
+    Serial.println("OK");
     return true;
 }

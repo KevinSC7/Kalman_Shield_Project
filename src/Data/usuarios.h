@@ -62,3 +62,13 @@ bool setDatosUsuario(String _user, String _NyA, String _psw){
   return true;
 }
 
+bool resetDatosUsuario(){
+  Serial.println("resetUsuario");
+  if(!usuariosBegin())return false;
+  LittleFS.remove("/MisUsuarios.txt");
+  if(!usuariosBegin()) {
+		Serial.println("Error: en SPIFFS al cargar datos del usuario");
+	}
+  Serial.println("OK");
+  return true;
+}

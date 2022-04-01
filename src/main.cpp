@@ -13,12 +13,14 @@ const char* password = "KalmanShield";	//8 caracteres (Req. seguridad) y por def
 String currentSSID = ssid;
 String currentPSW = password;
 bool autorizacion = false;
+bool actualConf[6]={0,0,0,0,0,0};//6 datos
+double tiempo_ms;
 
 //ESTO ES CODIGO SEPARADO, TIENE QUE ESTAR ANTES DE LAS VARIABLES GLOBALES
-#include "Data/config.h"		//Contiene la configuración del AP (IPAddress)
 #include "Data/herramientasParser.h" //Herramientas propias que ayudan a parsear Strings
 #include "Data/usuarios.h"		//Control de datos del usuario sobre SPIFFS
-#include "Data/SSID.h"			//Control de datos del AP sobre SPIFFS
+#include "Data/SSID.h"			//Control de datos del AP sobre SPIFFS, contiene tambien IPAddress
+#include "Data/config.h"		//Control de datos de las configuraciones
 
 #include "InterfacesArduino/login.h"
 #include "InterfacesArduino/gestionDatos.h"
@@ -33,6 +35,8 @@ void notFound(AsyncWebServerRequest *request) {	//Para URL no encontrada
 
 void setup() {
     Serial.begin(115200);							//Baudios del puerto serie
+	
+	tiempo_ms=(double)0;
 	//PREPARAR DATOS DEL AP
 	if(!APbegin()) {								//Preparar carga SPIFFS seccion DatosAP.txt
 		Serial.println("Error: en SPIFFS al cargar datos del AP");
@@ -59,6 +63,10 @@ void setup() {
 		}else{
 			Serial.println("Error: Fallo en getUser");
 		}
+	}
+
+	if(!configBegin()){
+		Serial.println("Error: en SPIFFS al cargar datos de las configuraciones");
 	}
 
 	//FIN PREPARAR DATOS
@@ -98,7 +106,7 @@ void setup() {
 	server.on("/getGestion", HTTP_GET, [] (AsyncWebServerRequest *request) {	//http:IP/getGestion
 		AsyncResponseStream *response = request->beginResponseStream("text/html");
 		if(autorizacion){
-			response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 0));	//Llamada a la intefaz gestion datos sin errores tipoError = 0
+			response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 0, ""));	//Llamada a la intefaz gestion datos sin errores tipoError = 0
 			request->send(response);
 		}else{
 			request->redirect("/getLogin");
@@ -115,7 +123,7 @@ void setup() {
 			String d3 = request->arg("retype");
 			
 			if(d2 != d3){
-				response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 1));
+				response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 1, ""));
 				request->send(response);
 			}else{
 				String t ="";
@@ -145,7 +153,7 @@ void setup() {
 					WiFi.softAP(currentSSID, currentPSW, 1, 0, 1);
 				}else{
 					Serial.println("No se pudo establecer nuevos datos de configuracion AP");
-					response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 3));
+					response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 3, ""));
 					request->send(response);
 				}
 			}else{
@@ -164,7 +172,7 @@ void setup() {
 			String p = request->arg("psw");
 			String r = request->arg("retype");
 			if(p != r){
-				response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 2));	//Llamada a la intefaz gestion datos con error mal retypr tipoError = 0
+				response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 2, ""));	//Llamada a la intefaz gestion datos con error mal retypr tipoError = 0
 				request->send(response);
 			}else{
 				String t = "";
@@ -199,7 +207,7 @@ void setup() {
 					request->redirect("/getGestion");
 				}else{
 					Serial.println("No se pudo establecer nuevos datos de configuracion del usuario");
-					response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 4));
+					response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 4, ""));
 					request->send(response);
 				}
 			}else{
@@ -210,23 +218,98 @@ void setup() {
 
 	server.on("/postConfig", HTTP_POST, [](AsyncWebServerRequest *request){	//http:IP/postConfig
 		AsyncResponseStream *response = request->beginResponseStream("text/html");
-		if(!autorizacion)request->redirect("/getLogin");
-		String accion = request->arg("accion");
-		if(accion == "Configuraciones"){
-			response->print(getDatosConfiguraciones());
-		}else if(accion == "Ejecutar"){
-			response->print("");
-		}else if(accion == "Guardar"){
-			response->print("");
+		if(!autorizacion){
+			request->redirect("/getLogin");
 		}else{
-			request->send(401);
+			bool guardar=false;
+			String accion = request->arg("accion");
+			String tipoEnvio = request->arg("tipoEnvio");
+			String d=request->arg("setTime");
+			if(tipoEnvio=="0"){
+				tiempo_ms=0;
+			}else{
+				if(d.indexOf(',')!=-1 || d.indexOf('.')!=-1){
+					Serial.println("Error solo numeros enteros");
+					tiempo_ms=0;
+				}else{
+					tiempo_ms=d.toDouble();
+				}
+			}
+			String df = tipoEnvio;
+			if(request->arg("ib")=="ok"){
+				df+=1; guardar=true;
+			}else{
+				df+=0;
+			}
+			if(request->arg("gb")=="ok"){
+				df+=1;guardar=true;
+			}else{
+				df+=0;
+			}
+			if(request->arg("ip")=="ok"){
+				df+=1;guardar=true;
+			}else{
+				df+=0;
+			}
+			if(request->arg("fus")=="ok"){
+				df+=1;guardar=true;
+			}else{
+				df+=0;
+			}
+			if(tipoEnvio == "0"){
+				df+="-0";
+			}else{
+				df+="-";
+				df+=d;
+			}
+
+			if(accion == "Configuraciones"){
+				response->print(getDatosConfiguraciones());
+				request->send(response);
+			}else if(accion == "Ejecutar"){
+				response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 0, df));
+				request->send(response);
+			}else if(accion == "Guardar"){
+				if(guardar){//Se ha checkeado al menos un checkbox
+					if(addNewConf(df)){	//Añadida
+						response->print(getDatosConfiguraciones());
+						request->send(response);
+					}else{				//No se pudo añadir
+						response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 5, ""));
+						request->send(response);
+					}
+				}else{
+					response->print(getGestionDatos(currentSSID, miUsuario->user, miUsuario->nombreApellidos, miUsuario->psw, 6, ""));
+					request->send(response);
+				}
+			}else{
+				request->send(401);
+			}
 		}
-		
-		request->send(response);
     });
 
-    server.onNotFound(notFound);
+	server.on("/postDataConfig", HTTP_POST, [](AsyncWebServerRequest *request){	//http:IP/postDataConfig
+		AsyncResponseStream *response = request->beginResponseStream("text/html");
+		if(!autorizacion){
+			request->redirect("/getLogin");
+		}else{
+			if(request->arg("et") != ""){
+				resetDatosConfiguraciones();
+			}else{
+				String idpulsado = request->arg("idpulsado");
+				Serial.println("idpulsado: "+idpulsado);
+				String botonpulsado = request->arg("botonpulsado");
+				Serial.println("idpulsado: "+botonpulsado);
+				
+			}
+			response->print(getDatosConfiguraciones());
+			request->send(response);
+		}
+    });
 
+
+    server.onNotFound(notFound);
+	
     server.begin();
 }
 
