@@ -16,8 +16,9 @@
        p {font-size: 20px;}
        .protegido {background-color: #080808; font-size: 10px;}
        .protegido:hover{background-color: gray;}
-       .boton1 {width: 31%;}
-       
+       .botonNew {background-color: #094709; color: white;border: 3px solid #080808;border-radius: 12px; height: 30px; width: 100%;}
+       .botonNew:hover {background-color: #229422}
+
         @media only screen and (orientation:portrait){
             body {margin-left: 6em;}
             html { 
@@ -39,6 +40,18 @@
             }else{
                 document.getElementById("setTime").hidden = true;
             }
+        }
+        function idtozero(){
+            document.getElementById("num").innerHTML = "Sin configuración";
+            document.getElementById("miConf").value = "0";
+            document.getElementById("bnew").hidden=true;
+            document.getElementById("bcambio").value = "Guardar";
+        }
+        function myhover(e){
+            e.style.backgroundColor = "#fc0f0f";
+        }
+        function sinHover(e){
+            e.style.backgroundColor = "#a50a0a";
         }
     </script>
 <body>
@@ -85,9 +98,13 @@
         </th>
         <th style="width: 25%; text-align: left;">
             <hr>
-            <p><b>Configuración herramientas</b></p>
+            <p align="center"><b>Configuración herramientas</b></p>
+            <hr>
+            <p id="num" style="font-size: 15px; text-align: center;">ID configuración:</p>
+            <input type='button' class="botonNew" id="bnew" onClick='idtozero()' value='Nueva'>
             <hr>
                 <form >
+                    <input type="hidden" name="miConf" id="miConf" value="1" />
                     <input type="radio" onchange="showsText(this);" name="tipoEnvio" id='asin' value="0" checked>
                     <label for="asin">Envío asincrónico de datos</label>
                     <br>
@@ -108,9 +125,9 @@
                     <input type="checkbox" name="envio" id="fus" value="2">
                     <label for="fus">Fusion datos IMU+GPS con Kalman</label>
                     <hr>
-                    <input type='submit' class="boton1" value='Ejecutar'>
-                    <input type='submit' class="boton1" value='Guardar'>
-                    <input type='submit' class="boton1" value='Configuraciones'>
+                    <input type='submit' style="width: 40%; background-color: #a50a0a;" onmouseout="sinHover(this)" onmouseover="myhover(this)" value='Ejecutar/Parar'>
+                    <input type='submit' style="width: 40%; float: right;" id="bcambio" value='Actualizar'>
+                    <input type='submit' style="width: 100%; margin-top: 4px;" value='Mis configuraciones'>
                 </form>
                 <hr>
                 <p style="color: rgb(82, 24, 216); width: 100%; font-size: 15px;">Formato de envio por serial:</p>

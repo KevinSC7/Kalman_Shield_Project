@@ -10,10 +10,10 @@ String getLogin(byte tipoError){
    	html+="<table align='center' border='2px' width='100%'>";
    	html+="<tr><th align='center'><label for='user'>Usuario</label><br><input type='text' id='user' name='user'>";
 	html+="<div id='errorUser' style='color: red;'>";
-	if(tipoError == 1)html+="Usuario incorrecto";
+	if(tipoError == ERROR_USER)html+="Usuario incorrecto";
 	html+="</div><br><br><label for='psw'>Contrase"; html.concat((char)241); html+="a</label>";
    	html+="<br><input type='password' id='psw' name='psw'><div id='errorPsw' style='color: red;'>";
-	if(tipoError == 2){
+	if(tipoError == ERROR_PSW){
 		html+="Contrase";
 		html.concat((char)241);//La ñ
 		html+="a incorrecta";

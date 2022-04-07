@@ -15,3 +15,15 @@ String buscarBloque(String cadena, char delimitador, int numeroBloque){
     i = s+1;
   }
 }
+
+int numBloques(String cadena, char delimitador){
+  if(cadena.isEmpty()) return 0;
+  int i = 0, s, n = 0;
+  while(true){
+    n++;
+    s = cadena.indexOf(delimitador, i);
+    if(s < 0) break;
+    i = s+1;
+  }
+  return n;
+}

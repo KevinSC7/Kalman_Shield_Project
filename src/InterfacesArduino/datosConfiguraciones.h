@@ -18,7 +18,7 @@ String getDatosConfiguraciones(){
     html+="<input type='submit' value='Cerrar sesion' style='float: right;' class='confirm'>";
     html+="</form><form action='/getGestion' method='get'><input type='submit' value='Volver a gestion de datos' style='float: left;' class='confirm'></form></th></tr>";
 
-    html+="<form method='post' action='/postDataConfig'>";
+    html+="<form method='post' action='/postConfig'>";
     html+="<input type='hidden' name='idpulsado' id='idpulsado' value='' />";
     html+="<input type='hidden' name='botonpulsado' id='botonpulsado' value='' />";
     for(int i=1; i<11; i++){

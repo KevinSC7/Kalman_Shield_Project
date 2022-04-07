@@ -1,4 +1,4 @@
-String getGestionDatos(String _ssid, String _user, String _NyA, String _pswUser, byte tipoError, String _config){
+String getGestionDatos(byte tipoError, String _config, bool ejecutando){
     bool sin=false, ib=false, gb=false, ip=false, fus=false;
     String t="";
     if(!_config.isEmpty()){
@@ -27,7 +27,7 @@ String getGestionDatos(String _ssid, String _user, String _NyA, String _pswUser,
     html+="<tr style='vertical-align: top;'><th><hr><p><b>Configuraci";html.concat((char)243);html+="n AP</b></p>";
     html+="<form method='post' action='/postSSID'><div style='width: 40%;' align='right'><label for='SSID'>Nueva SSID*:</label></div>";
     html+="<div style='width: 60%;' align='left'><input type='text' maxlength='20' minlength='1' required name='SSID' value='";
-    html+=_ssid;
+    html+=currentSSID;
     html+="'></div>";
     html+="<div style='width: 40%;' align='right'><label for='psw'>Nueva contrase";html.concat((char)241);html+="a*:</label></div>";
     html+="<div style='width: 60%;' align='left'><input type='password' maxlength='20' minlength='8' required name='psw'></div>";
@@ -35,16 +35,16 @@ String getGestionDatos(String _ssid, String _user, String _NyA, String _pswUser,
     html+="<div style='width: 60%;' align='left'><input type='password' maxlength='20' minlength='8' name='retype' required></div>";
     html+="<div style='width: 100%;'><input type='submit' value='Establecer';></div>";
     html+="<div style='color: red; width: 100%;'>";
-    if(tipoError == 1){
+    if(tipoError == ERROR_RETYPE_SSID){
         html+="Retype incorrecto";
     }
-    if(tipoError == 3){
+    if(tipoError == ERROR_DATA_AP){
         html+="Fallo al establecer los datos";
     }
     html+="</div>";
 
     html+="</form></th><th style='width: 25%; text-align: left;'><hr><p><b>Configuraci";html.concat((char)243);html+="n herramientas</b></p><hr>";
-    html+="<form method='post' action='/postConfig'>";
+    html+="<form method='post' action='/postGestion'>";
     html+="<input type='radio' onchange='showsText(this);' name='tipoEnvio' id='asin' value='0'"; if(!sin)html+=" checked";html+=">";
     html+="<label for='asin'>Env";html.concat((char)237);html+="o asincr";html.concat((char)243);html+="nico de datos</label><br>";
     html+="<input type='radio' onchange='showsText(this);' name='tipoEnvio' id='sin' value='1'";if(sin)html+=" checked";html+=">";
@@ -61,10 +61,10 @@ String getGestionDatos(String _ssid, String _user, String _NyA, String _pswUser,
     html+="<input type='submit' class='boton1' name='accion' value='Guardar'>";
     html+="<input type='submit' class='boton1' name='accion' value='Configuraciones'></form>";
     html+="<div style='color: red; width: 100%;'>";
-    if(tipoError == 5){
+    if(tipoError == ERROR_CONF_ADD){
         html+="No se pudo guardar. Máximo de configuraciones: 10";
     }
-    if(tipoError == 6){
+    if(tipoError == ERROR_NO_SELECT_CHECKBOX){
         html+="No se guard";html.concat((char)243);html+=". Escoja minimo una herramienta(checkbox).";
     }
     html+="</div>";
@@ -72,18 +72,18 @@ String getGestionDatos(String _ssid, String _user, String _NyA, String _pswUser,
     html+="<div id='rawData' style='color: #094709; width: 100%;'>/rawData/...</div></th>";
 
     html+="<th><hr><p><b>Configuraci";html.concat((char)243);html+="n Usuario</b></p>";
-    html+=" <form method='post' action='/postChangeUser'>";
+    html+=" <form method='post' action='/postUser'>";
     html+="<div style='width: 40%;' align='right'><label for='Usuario'>Usuario*:</label></div>";
     html+="<div style='width: 60%;' align='left'><input type='text' maxlength='20' minlength='1' required name='Usuario' value='";
-    html+=_user;
+    html+=miUsuario->user;
     html+="'></div>";
     html+="<div style='width: 40%;' align='right'><label for='NombreApellidos'>Nombre y apellidos:</label></div>";
     html+="<div style='width: 60%;' align='left'><input type='text' maxlength='20' name='NombreApellidos' value='";
-    html+=_NyA;
+    html+=miUsuario->nombreApellidos;
     html+="'></div>";
     html+="<div style='width: 40%;' align='right'><label for='pswActual'>Contrase";html.concat((char)241);html+="a actual:</label></div>";
     html+="<div style='width: 60%;' align='left'><input type='text' readonly class='protegido' value='";
-    html+=_pswUser;
+    html+=miUsuario->psw;
     html+="' name='pswActual'></div>";
     html+="<hr style='width: 100%; margin-bottom: 10px;'><div style='width: 40%;' align='right'><label for='psw'>Nueva contrase";html.concat((char)241);html+="a*:</label></div>";
     html+="<div style='width: 60%;' align='left'><input type='password' maxlength='20' minlength='8' required name='psw'></div>";
@@ -91,10 +91,10 @@ String getGestionDatos(String _ssid, String _user, String _NyA, String _pswUser,
     html+="<div style='width: 60%;' align='left'><input type='password' maxlength='20' minlength='8' required name='retype'></div>";
     html+="<div style='width: 100%;'><input type='submit' value='Establecer'></div>";
     html+="<div style='color: red; width: 100%;'>";
-    if(tipoError == 2){
+    if(tipoError == ERROR_RETYPE_USER){
         html+="Retype incorrecto";
     }
-    if(tipoError == 4){
+    if(tipoError == ERROR_DATA_USER){
         html+="Fallo al establecer los datos";
     }
     html+="</div></form>";
