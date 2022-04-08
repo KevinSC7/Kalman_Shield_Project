@@ -27,7 +27,7 @@ const char* password = "KalmanShield";	//8 caracteres (Req. seguridad) y por def
 String currentSSID = ssid;
 String currentPSW = password;
 bool autorizacion = false;
-//bool actualConf[5]={0,0,0,0,0};			//5 datos: async/sinc, ib, gb, ip, fus
+bool actualConf[5]={0,0,0,0,0};			//5 datos: async/sinc, ib, gb, ip, fus
 bool ejecutando;
 String miConf;							//Configuracion cargada
 double tiempo_ms;						//Ultimo dato de la configuracion actual, tasa de envio
@@ -56,9 +56,9 @@ void notFound(AsyncWebServerRequest *request) {	//Para URL no encontrada
 void setup() {
     Serial.begin(115200);							//Baudios del puerto serie
 	idConf = 0;										//No hay configuracion cargada
+	miConf = NO_CONFIG;								//No hay configuracion cargada
 	tipoErrorGestion = NO_ERROR;					//Acceso a gestion sin errores
 	tipoErrorLogin = NO_ERROR;						//Acceso a login sin errores
-	miConf = NO_CONFIG;								//No hay configuracion cargada
 	ejecutando = NO_RUN;							//No esta ejecutandose la configuracion
 	tiempo_ms=(double)0;							//Tasa de envio de datos 0ms
 
@@ -102,6 +102,7 @@ void setup() {
     server.on("/getLogin", HTTP_GET, [] (AsyncWebServerRequest *request) {		//http:IP/getLogin
 		AsyncResponseStream *response = request->beginResponseStream("text/html");
 		idConf = 0;									//Siempre que haya logout->no hay configuracion
+		miConf = NO_CONFIG;
 		response->print(getLogin(tipoErrorLogin));	//Llamada a la intefaz login, inicialmente sin errores
         request->send(response);
     });
@@ -311,6 +312,8 @@ void setup() {
 			
 			if(accion == "Configuraciones"){
 				tipoErrorGestion = NO_ERROR;
+				idConf = 0;
+				miConf = NO_CONFIG;
 				request->redirect("/getConfiguraciones");
 			}else if(accion == "Guardar"){
 				if(selectedAtListOne){//Se ha checkeado al menos un checkbox
@@ -341,12 +344,14 @@ void setup() {
 			}else if(accion == "Ejecutar"){
 				if(selectedAtListOne){
 					tipoErrorGestion = NO_ERROR;
+					configToBoolArray5(df);
 					ejecutando = RUN;
 				}else{
 					tipoErrorGestion = ERROR_NO_SELECT_CHECKBOX;
 				}
 				request->redirect("/getGestion");
 			}else if(accion == "Stop"){
+				resetArrayBool5();
 				ejecutando = NO_RUN;
 				request->redirect("/getGestion");
 			}else{//No existe ese boton, intento de acceso ilegal (por seguridad)
@@ -375,7 +380,7 @@ void setup() {
 				request->redirect("/getConfiguraciones");
 			}else{
 				String idpulsado = request->arg("idpulsado");
-				idConf = idpulsado.toInt();
+				idConf = StringToInt(idpulsado);
 				String botonpulsado = request->arg("botonpulsado");
 				if(botonpulsado == "Cargar"){
 					miConf = getConfig(idConf);
@@ -384,6 +389,8 @@ void setup() {
 					if(!deleteConf(idConf)){
 						Serial.println("Error al borrar la configuracion");
 					}
+					idConf = 0;
+					miConf = NO_CONFIG;
 					request->redirect("/getConfiguraciones");
 				}else{//No existe ese boton, intento de acceso ilegal (por seguridad)
 					autorizacion=false;

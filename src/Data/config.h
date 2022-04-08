@@ -71,9 +71,9 @@ bool deleteConf(int nconf){
         datos=file.readStringUntil((char)13);
     }
     file.close();
-    
+    if(datos.isEmpty())return false;            //Datos vacio, nada que borrar
     String r = borrarBloque(datos, '/', nconf);
-    if(r.isEmpty() || datos == r)return false;  //Vacio o no ha cambiado: aa/bb/ y bloque 3 -> aa/bb/
+    if(datos == r)return false;                 //No ha cambiado las confs: aa/bb/ y bloque 3 -> aa/bb/
     file = LittleFS.open("/Configuraciones.txt", "w+");
     if(!file)return false;
     file.println(r);
@@ -92,10 +92,10 @@ bool updateConfig(int nconf, String nueva){
         datos=file.readStringUntil((char)13);
     }
     file.close();
-    
+    if(datos.isEmpty())return false;                        //Nada que actualizar
     if(nueva == buscarBloque(datos, '/', nconf))return true;//Actualiza pero la conf es la misma
     String r = actualizarBloque(datos, '/', nconf, nueva);
-    if(r.isEmpty() || datos == r)return false;  //Vacio o no ha cambiado aunque nueva != conf: aa/bb/ , nueva:"cc" y bloque 3 -> aa/bb/
+    if(datos == r)return false;  //Vacio o no ha cambiado aunque nueva != conf: aa/bb/ , nueva:"cc" y bloque 3 -> aa/bb/
     file = LittleFS.open("/Configuraciones.txt", "w+");
     if(!file)return false;
     file.println(r);

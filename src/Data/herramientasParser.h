@@ -32,7 +32,8 @@ String borrarBloque(String cadena, char delimitador, int numeroBloque){
   int i = 0, s, n = 0;                                  //Indice(i), siguiente(s) y bloque obtenido(n)
 	String parte1 = "", parte2 = "";
 	boolean principio = true;
-	if(numeroBloque < 1 || cadena.isEmpty())return "";   
+	if(numeroBloque < 1 || cadena.isEmpty())return cadena;
+  if(cadena.indexOf(delimitador, i) < 0)return cadena;//Sino existe delimitador la deja intacta
 	while(true){
 		n++;
 		 if(n == numeroBloque){
@@ -56,7 +57,8 @@ String actualizarBloque(String cadena, char delimitador, int numeroBloque, Strin
   int i = 0, s, n = 0;
 	String parte1 = "", parte2 = "";
 	boolean principio = true;
-	if(numeroBloque < 1 || cadena.isEmpty())return "";   
+	if(numeroBloque < 1 || cadena.isEmpty())return cadena;
+  if(cadena.indexOf(delimitador, i) < 0)return cadena;//Sino existe delimitador la deja intacta
 	while(true){
 		n++;
 		if(n == numeroBloque){
@@ -75,4 +77,33 @@ String actualizarBloque(String cadena, char delimitador, int numeroBloque, Strin
 	   i = s+1;
 	  }
   return parte1+parte2;
+}
+
+int StringToInt(String cadena){
+  int l = cadena.length();
+  int i = 0, ceros = l-1;//125 -> 1*100 + 2*10 + 5*1 (l=3, l-1=numero de ceros)
+  int suma = 0;
+  while(i < l){
+    if(cadena[i] > 47 && cadena[i] < 58){ //Si es un numero (ascii table)
+      suma += (cadena[i]-'0')*(pow(10, ceros)); //125 -> 1*(10^2) + 2*(10^1) + 5*(10^0)
+      ceros--;
+    }else{
+      return 0;
+    }
+    i++;
+  }
+  return suma;
+}
+
+bool configToBoolArray5(String c){
+  if(c.isEmpty())return false;
+  for(int i = 0; i < 5; i++){
+    if(c[i]=='1')actualConf[i] = true;
+    else actualConf[i] = false;
+  }
+  return true;
+}
+
+bool resetArrayBool5(){
+  return configToBoolArray5("00000");
 }
