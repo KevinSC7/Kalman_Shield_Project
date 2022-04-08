@@ -27,3 +27,52 @@ int numBloques(String cadena, char delimitador){
   }
   return n;
 }
+
+String borrarBloque(String cadena, char delimitador, int numeroBloque){
+  int i = 0, s, n = 0;                                  //Indice(i), siguiente(s) y bloque obtenido(n)
+	String parte1 = "", parte2 = "";
+	boolean principio = true;
+	if(numeroBloque < 1 || cadena.isEmpty())return "";   
+	while(true){
+		n++;
+		 if(n == numeroBloque){
+		  principio = false; //Por si es el primero, n=numbloque=1
+		  s = cadena.indexOf(delimitador, i);//Me salto el bloque
+		  if(s < 0)break;
+		  i = s+1;
+		}
+		s = cadena.indexOf(delimitador, i);
+		if(s < 0){
+		  break;                                        
+	  }
+		if(principio)parte1 += cadena.substring(i, s)+"/";           //Si no he llegado al numBloque, añade al principio
+		if(!principio)parte2 += cadena.substring(i, s)+"/";
+		i = s+1;
+	}
+  return parte1+parte2;
+}
+
+String actualizarBloque(String cadena, char delimitador, int numeroBloque, String nuevo){
+  int i = 0, s, n = 0;
+	String parte1 = "", parte2 = "";
+	boolean principio = true;
+	if(numeroBloque < 1 || cadena.isEmpty())return "";   
+	while(true){
+		n++;
+		if(n == numeroBloque){
+		  principio = false;
+		  s = cadena.indexOf(delimitador, i);
+		  if(s < 0)break;
+		  parte2 += nuevo+"/";
+		  i = s+1;
+		}
+		s = cadena.indexOf(delimitador, i);
+    if(s < 0){
+    	break;                                        
+  	}
+	  if(principio)parte1 += cadena.substring(i, s)+"/";
+	  if(!principio)parte2 += cadena.substring(i, s)+"/";
+	   i = s+1;
+	  }
+  return parte1+parte2;
+}

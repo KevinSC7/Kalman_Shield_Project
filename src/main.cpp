@@ -15,6 +15,7 @@
 #define ERROR_DATA_USER 6
 #define ERROR_CONF_ADD 7
 #define ERROR_NO_SELECT_CHECKBOX 8
+#define ERROR_NO_UPDATE 9
 #define NO_CONFIG ""
 #define NO_RUN 0
 #define RUN 1
@@ -132,7 +133,6 @@ void setup() {
 	server.on("/getGestion", HTTP_GET, [] (AsyncWebServerRequest *request) {	//http:IP/getGestion
 		AsyncResponseStream *response = request->beginResponseStream("text/html");
 		if(autorizacion){
-			idConf = 0;
 			response->print(getGestionDatos(tipoErrorGestion, miConf, ejecutando));
 			request->send(response);
 		}else{
@@ -153,6 +153,7 @@ void setup() {
 				request->redirect("/getGestion");
 			}else{
 				datos = d1+"/"+d2;
+				tipoErrorGestion = NO_ERROR;
 				request->redirect("/getConfirmSSID");
 			}
 		}
@@ -208,6 +209,7 @@ void setup() {
 				request->redirect("/getGestion");
 			}else{
 				datos = u+"/"+n+"/"+p;
+				tipoErrorGestion = NO_ERROR;
 				request->redirect("/getConfirmUser");
 			}
 		}
@@ -259,10 +261,15 @@ void setup() {
 		if(!autorizacion){
 			request->redirect("/getLogin");
 		}else{
-			bool guardar=false;
+			bool selectedAtListOne = false;
 			String accion = request->arg("accion");
 			String tipoEnvio = request->arg("tipoEnvio");
 			String d = request->arg("setTime");
+			Serial.println("miConf: "+request->arg("miConf"));
+			if(request->arg("miConf") == 0){
+				idConf = 0;
+				miConf = NO_CONFIG;
+			}
 			if(tipoEnvio == "0"){
 				tiempo_ms=0;
 			}else{
@@ -275,22 +282,22 @@ void setup() {
 			}
 			String df = tipoEnvio;
 			if(request->arg("ib")=="ok"){
-				df+=1; guardar=true;
+				df+=1; selectedAtListOne = true;
 			}else{
 				df+=0;
 			}
 			if(request->arg("gb")=="ok"){
-				df+=1;guardar=true;
+				df+=1; selectedAtListOne = true;
 			}else{
 				df+=0;
 			}
 			if(request->arg("ip")=="ok"){
-				df+=1;guardar=true;
+				df+=1; selectedAtListOne = true;
 			}else{
 				df+=0;
 			}
 			if(request->arg("fus")=="ok"){
-				df+=1;guardar=true;
+				df+=1; selectedAtListOne = true;
 			}else{
 				df+=0;
 			}
@@ -301,11 +308,14 @@ void setup() {
 				df+=d;
 			}
 			//Fin de recogida de datos
+			
 			if(accion == "Configuraciones"){
+				tipoErrorGestion = NO_ERROR;
 				request->redirect("/getConfiguraciones");
 			}else if(accion == "Guardar"){
-				if(guardar){//Se ha checkeado al menos un checkbox
+				if(selectedAtListOne){//Se ha checkeado al menos un checkbox
 					if(addNewConf(df)){	//Añadida
+						tipoErrorGestion = NO_ERROR;
 						request->redirect("/getConfiguraciones");
 					}else{				//No se pudo añadir
 						tipoErrorGestion = ERROR_CONF_ADD;
@@ -316,13 +326,27 @@ void setup() {
 					request->redirect("/getGestion");
 				}
 			}else if(accion == "Actualizar"){
-
-
-
+				if(selectedAtListOne){
+					if(updateConfig(idConf, df)){
+						tipoErrorGestion = NO_ERROR;
+						request->redirect("/getConfiguraciones");
+					}else{
+						tipoErrorGestion = ERROR_NO_UPDATE;
+						request->redirect("/getGestion");
+					}
+				}else{
+					tipoErrorGestion = ERROR_NO_SELECT_CHECKBOX;
+					request->redirect("/getGestion");
+				}
 			}else if(accion == "Ejecutar"){
-				ejecutando = RUN;
+				if(selectedAtListOne){
+					tipoErrorGestion = NO_ERROR;
+					ejecutando = RUN;
+				}else{
+					tipoErrorGestion = ERROR_NO_SELECT_CHECKBOX;
+				}
 				request->redirect("/getGestion");
-			}else if(accion == "Parar"){
+			}else if(accion == "Stop"){
 				ejecutando = NO_RUN;
 				request->redirect("/getGestion");
 			}else{//No existe ese boton, intento de acceso ilegal (por seguridad)
@@ -351,9 +375,20 @@ void setup() {
 				request->redirect("/getConfiguraciones");
 			}else{
 				String idpulsado = request->arg("idpulsado");
-				Serial.println("idpulsado: "+idpulsado);
+				idConf = idpulsado.toInt();
 				String botonpulsado = request->arg("botonpulsado");
-				Serial.println("idpulsado: "+botonpulsado);
+				if(botonpulsado == "Cargar"){
+					miConf = getConfig(idConf);
+					request->redirect("/getGestion");
+				}else if(botonpulsado == "Eliminar"){
+					if(!deleteConf(idConf)){
+						Serial.println("Error al borrar la configuracion");
+					}
+					request->redirect("/getConfiguraciones");
+				}else{//No existe ese boton, intento de acceso ilegal (por seguridad)
+					autorizacion=false;
+					request->redirect("/getLogin");
+				}
 			}
 		}
     });

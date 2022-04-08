@@ -71,17 +71,20 @@ bool deleteConf(int nconf){
         datos=file.readStringUntil((char)13);
     }
     file.close();
-    if(buscarBloque(datos, '/', nconf)=="")return true;
-    String parte1=buscarBloque(datos, '/', nconf-1);//Si nconf==0 -> vacio
-    String parte2=buscarBloque(datos, '/', nconf+1);//Si el ultimo no existe(11) devuelve vacio
-    datos=parte1+parte2;    //El primero: vacio+parte2, el ultimo: parte1+vacio, ultimo=primero: vacio+vacio
-    Serial.print("delete: "+datos);
-    Serial.println(".");
+    
+    String r = borrarBloque(datos, '/', nconf);
+    if(r.isEmpty() || datos == r)return false;  //Vacio o no ha cambiado: aa/bb/ y bloque 3 -> aa/bb/
+    file = LittleFS.open("/Configuraciones.txt", "w+");
+    if(!file)return false;
+    file.println(r);
+    file.close();
+    
     return true;
 }
 
 bool updateConfig(int nconf, String nueva){
     if(nconf > 10)return false;
+    if(nueva.length() < 1) return false;                    //Al menos un caracter (aunque el formato sea erroneo)
     File file = LittleFS.open("/Configuraciones.txt", "r");
     if(!file) return false;
     String datos;
@@ -89,9 +92,15 @@ bool updateConfig(int nconf, String nueva){
         datos=file.readStringUntil((char)13);
     }
     file.close();
-    datos=buscarBloque(datos, '/', nconf);
-    if(datos.isEmpty())return false;
-    Serial.println("update: "+datos);
+    
+    if(nueva == buscarBloque(datos, '/', nconf))return true;//Actualiza pero la conf es la misma
+    String r = actualizarBloque(datos, '/', nconf, nueva);
+    if(r.isEmpty() || datos == r)return false;  //Vacio o no ha cambiado aunque nueva != conf: aa/bb/ , nueva:"cc" y bloque 3 -> aa/bb/
+    file = LittleFS.open("/Configuraciones.txt", "w+");
+    if(!file)return false;
+    file.println(r);
+    file.close();
+
     return true;
 }
 
