@@ -5,6 +5,7 @@
 #include <ESPAsyncTCP.h>		//Necesario para realizar TCP asicronico
 #include <ESPAsyncWebServer.h>	//Permite operar con peticiones web asincronicas
 #include <LittleFS.h>			//Para operar con la memoria SPIFFS del ESP826612
+#include <SoftwareSerial.h>		//Para usar dos puertos serie
 
 #define NO_ERROR 0
 #define ERROR_PSW 1
@@ -21,6 +22,7 @@
 #define RUN 1
 
 AsyncWebServer server(80);				//Puerto 80
+SoftwareSerial gpsSerial(13, 15); // RX(D7), TX(D8) -> UART para GPS
 
 const char* ssid = "KalmanShield";		//Nombre baliza AP por defecto (RF1)
 const char* password = "KalmanShield";	//8 caracteres (Req. seguridad) y por defecto esa contraseña (RF1)
@@ -35,6 +37,7 @@ int idConf;								//Indice de la actual configuracion
 byte tipoErrorGestion;					//Tipo de error al cargar gestion
 byte tipoErrorLogin;					//Tipo de error al cargar login
 String datos;							//Usos varios, datos globales
+String datosGps;
 
 //ESTO ES CODIGO SEPARADO, TIENE QUE ESTAR ANTES DE LAS VARIABLES GLOBALES
 #include "Data/herramientasParser.h" 	//Herramientas propias que ayudan a parsear Strings
@@ -54,7 +57,9 @@ void notFound(AsyncWebServerRequest *request) {	//Para URL no encontrada
 }
 
 void setup() {
-    Serial.begin(115200);							//Baudios del puerto serie
+    Serial.begin(115200);							//Baudios del puerto serie el monitor
+	gpsSerial.begin(9600);							//Baudios del puerto serie del GPS
+	datosGps = "";
 	idConf = 0;										//No hay configuracion cargada
 	miConf = NO_CONFIG;								//No hay configuracion cargada
 	tipoErrorGestion = NO_ERROR;					//Acceso a gestion sin errores
@@ -410,6 +415,13 @@ void loop() {
 		autorizacion=false;//Si se desconecta se cierra la sesion
 		tipoErrorLogin = 0;//Vuelta a empezar, no hay errores
 	}
+	if (gpsSerial.available())
+	{
+		char data;
+		data = gpsSerial.read();
+		Serial.print(data);
+	}
+	
 }
 
 
