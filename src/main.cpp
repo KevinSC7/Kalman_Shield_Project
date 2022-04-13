@@ -6,6 +6,7 @@
 #include <ESPAsyncWebServer.h>	//Permite operar con peticiones web asincronicas
 #include <LittleFS.h>			//Para operar con la memoria SPIFFS del ESP826612
 #include <SoftwareSerial.h>		//Para usar dos puertos serie
+#include <Wire.h>				//Para conexión I2C con el IMU
 
 #define NO_ERROR 0
 #define ERROR_PSW 1
@@ -20,6 +21,7 @@
 #define NO_CONFIG ""
 #define NO_RUN 0
 #define RUN 1
+#define MPU6050_adress 0x68
 
 AsyncWebServer server(80);				//Puerto 80
 SoftwareSerial gpsSerial(13, 15); // RX(D7), TX(D8) -> UART para GPS
@@ -37,13 +39,22 @@ int idConf;								//Indice de la actual configuracion
 byte tipoErrorGestion;					//Tipo de error al cargar gestion
 byte tipoErrorLogin;					//Tipo de error al cargar login
 String datos;							//Usos varios, datos globales
+//GPS datos
 String datosGps;
+//MPU datos
+double gx, gy, gz, giro_x, giro_y, giro_z;
+double ax, ay, az, temperature;
+double accel_x, accel_y, accel_z;
+
+unsigned long loop_timer, tiempo_ejecucion;
+double angulo_pitch, angulo_roll;
 
 //ESTO ES CODIGO SEPARADO, TIENE QUE ESTAR ANTES DE LAS VARIABLES GLOBALES
 #include "Data/herramientasParser.h" 	//Herramientas propias que ayudan a parsear Strings
 #include "Data/usuarios.h"				//Control de datos del usuario sobre SPIFFS
 #include "Data/SSID.h"					//Control de datos del AP sobre SPIFFS, contiene tambien IPAddress
 #include "Data/config.h"				//Control de datos de las configuraciones
+#include "Control/MPU6050_funciones.h"	//Funciones del sensor inercial MPU6050
 
 usuario *miUsuario;						//Ver struct en usuarios.h
 
@@ -408,6 +419,10 @@ void setup() {
     server.onNotFound(notFound);
 	
     server.begin();
+	//FUNCIONES DEL MPU
+	Wire.begin();		//Iniciar I2C
+	MPU6050_iniciar();//Configuracion del IMU
+	loop_timer = millis();
 }
 
 void loop() {
@@ -415,12 +430,26 @@ void loop() {
 		autorizacion=false;//Si se desconecta se cierra la sesion
 		tipoErrorLogin = 0;//Vuelta a empezar, no hay errores
 	}
+	
+	if ((millis() - loop_timer) >= 2000){
+		tiempo_ejecucion = (millis() - loop_timer) / 1000;//A segundos
+		MPU6050_leer();
+		MPU6050_procesado1();
+		mostrar();
+		Serial.println("--------------------------------------------------------");
+		Serial.println();
+		loop_timer = millis();
+	}
+	
+	/*
 	if (gpsSerial.available())
 	{
 		char data;
 		data = gpsSerial.read();
 		Serial.print(data);
 	}
+	*/
+	
 	
 }
 
