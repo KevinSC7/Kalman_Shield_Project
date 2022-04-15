@@ -39,15 +39,23 @@ int idConf;								//Indice de la actual configuracion
 byte tipoErrorGestion;					//Tipo de error al cargar gestion
 byte tipoErrorLogin;					//Tipo de error al cargar login
 String datos;							//Usos varios, datos globales
+
 //GPS datos
 String datosGps;
+
 //MPU datos
 double gx, gy, gz, giro_x, giro_y, giro_z;
 double ax, ay, az, temperature;
 double accel_x, accel_y, accel_z;
+double angulo_pitch, angulo_roll, angulo_yaw;
 
+//Sincronismo variables
 unsigned long loop_timer, tiempo_ejecucion;
-double angulo_pitch, angulo_roll;
+
+//Variables para interprete de comandos
+String comandoRecibido;
+String parametros;
+int ins;
 
 //ESTO ES CODIGO SEPARADO, TIENE QUE ESTAR ANTES DE LAS VARIABLES GLOBALES
 #include "Data/herramientasParser.h" 	//Herramientas propias que ayudan a parsear Strings
@@ -55,6 +63,8 @@ double angulo_pitch, angulo_roll;
 #include "Data/SSID.h"					//Control de datos del AP sobre SPIFFS, contiene tambien IPAddress
 #include "Data/config.h"				//Control de datos de las configuraciones
 #include "Control/MPU6050_funciones.h"	//Funciones del sensor inercial MPU6050
+#include "Control/Interprete.h"
+//#include "Control/Simpson.h"			//Codigo de la regla de Simpson 1/3
 
 usuario *miUsuario;						//Ver struct en usuarios.h
 
@@ -420,8 +430,8 @@ void setup() {
 	
     server.begin();
 	//FUNCIONES DEL MPU
-	Wire.begin();		//Iniciar I2C
-	MPU6050_iniciar();//Configuracion del IMU
+	//Wire.begin();		//Iniciar I2C
+	//MPU6050_iniciar();//Configuracion del IMU
 	loop_timer = millis();
 }
 
@@ -430,8 +440,36 @@ void loop() {
 		autorizacion=false;//Si se desconecta se cierra la sesion
 		tipoErrorLogin = 0;//Vuelta a empezar, no hay errores
 	}
+
+	comandoRecibido = "";
+	while(Serial.available() > 0){
+		Serial.println("available");
+		comandoRecibido += (char)Serial.read();
+	}
+	parametros = "";
+	ins = getInstruccion(comandoRecibido, parametros);
+	if( ins != 0)exec(ins, parametros);
 	
-	if ((millis() - loop_timer) >= 2000){
+	if(actualConf[1]){
+		Serial.println("IMU RAW");
+	}
+	if(actualConf[2]){
+		Serial.println("GPS");
+	}
+	if(actualConf[3]){
+		Serial.println("IMU Kalman");
+	}
+	if(actualConf[4]){
+		Serial.println("Fusion");
+	}
+	
+	delay(1000);
+
+	if ((millis() - loop_timer) >= tiempo_ms){
+		Serial.println("Dentro");
+		loop_timer = millis();
+	}
+	/*if ((millis() - loop_timer) >= 2000){
 		tiempo_ejecucion = (millis() - loop_timer) / 1000;//A segundos
 		MPU6050_leer();
 		MPU6050_procesado1();
@@ -440,8 +478,6 @@ void loop() {
 		Serial.println();
 		loop_timer = millis();
 	}
-	
-	/*
 	if (gpsSerial.available())
 	{
 		char data;
@@ -449,8 +485,6 @@ void loop() {
 		Serial.print(data);
 	}
 	*/
-	
-	
 }
 
 

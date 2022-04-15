@@ -7,7 +7,7 @@ String buscarBloque(String cadena, char delimitador, int numeroBloque){
     n++;
     s = cadena.indexOf(delimitador, i);                 //Desde i busca el delimitador
     if(s < 0){                                          //No hay mas bloques por buscar, return
-      if(n == numeroBloque) return cadena.substring(i, cadena.length()); //El bloque ultimo coincide con el pedido, return bloque
+      if(n == numeroBloque) return cadena.substring(i); //El bloque ultimo coincide con el pedido, return bloque (con \n del String si lo tuviese)
       return "";                                        //El numero de bloque que pidio no existe (ej: hay 3 bloques y pides el 4), return vacio
     }
     r = cadena.substring(i, s);                         //Valor del bloque en el que estoy
@@ -93,6 +93,18 @@ int StringToInt(String cadena){
     i++;
   }
   return suma;
+}
+
+int StringBinToInt(String cadena){
+  int l = cadena.length()-1;
+  int resultado = 0;
+  for(int i = l; i > -1; i--){
+    if(cadena[i] == '1'){
+      resultado += pow(2, (l-i));
+    }else if(cadena[i] == '0');
+    else return 0;                          //Caracter que no es ni 1 ni 0 -> return 0
+  }
+  return resultado;
 }
 
 bool configToBoolArray5(String c){

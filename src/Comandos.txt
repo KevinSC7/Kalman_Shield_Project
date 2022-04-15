@@ -1,0 +1,35 @@
+Regresar a valores por defecto:             ESPKALMAN/RESET/ALL                                          cod:17 (00010001)
+Reset SSID a valores por defecto:           ESPKALMAN/RESET/SSID                                         cod:18 (00010010)
+Reset LOGIN a valores por defecto:          ESPKALMAN/RESET/LOGIN                                        cod:19 (00010011)
+Reiniciar el controlador:                   ESPKALMAN/REBOOT                                             cod:2  (0010)
+Set varianza en spiffs:                     ESPKALMAN/SET/V/'valor numerico'                             cod:845 (001101001101)
+Get varianza en spiffs:                     ESPKALMAN/GET/V                                              cod:68 (01000100)
+Set media calibracion en spiffs:            ESPKALMAN/SET/M/'valor numerico'                             cod:861 (001101011101)
+Get media calibracion en spiffs:            ESPKALMAN/GET/M                                              cod:69 (01000101)
+Calibracion varianza (+guardar en spiffs):  ESPKALMAN/CAL_V/'nº de tomas(int)'/'guardar=1, no guardar=0' cod:1501 (010111011101)
+Write(address) en el MPU:                   ESPKALMAN/MPU/W/'direccion en HEX'                           cod:1661 (011001111101)
+EndTransmision MPU:                         ESPKALMAN/MPU/END_T                                          cod:104 (01101000)
+Get todas las configuraciones guardadas:    ESPKALMAN/GET/CONF/ALL                                       cod:1169 (010010010001)
+Get una configuracion guardada especifica:  ESPKALMAN/GET/CONF/'nº de configuracion (int)'               cod:1181 (010010011101)
+Ejecutar una configuracion:                 ESPKALMAN/EXEC/CONF/'nº de configuracion (int)'              cod:1949 (011110011101)
+Para una configuración en ejecucion:        ESPKALMAN/STOP/CONF                                          cod:137 (10001001)
+Activar pin de aviso de datos listos:       ESPKALMAN/PIN_READY/ON                                       cod:154 (10011010)
+Desactivar pin de aviso de datos listos:    ESPKALMAN/PIN_READY/OFF                                      cod:155 (10011011)
+Solo una cantidad de valores concreta:      ESPKALMAN/SET/MAX_VALUES/'nº max de valores, luego STOP'     cod:877 (001101101101)
+
+--- USO DE HERRAMIENTAS NATIVAS ---
+Usar una herramienta nativa:                ESPKALMAN/TOOL/'KALMAN_1D|SIMPSON'/ON                        cod:2778 (101011011010)
+COMENTARIO: a partir de aqui espera dato a dato y se procesa sobre la marcha. Si hay algun otro proceso
+ejecutandose se pone a STOP. No acepta nada que no sea los cuatro siguientes comandos:
+
+Mandar dato:                                ESPKALMAN/SEND/DATA/'valor numerico'
+COMENTARIO: procesa dato a dato y guarda el resultado en una variable.
+
+Get resultado actual de la herramienta:     ESPKALMAN/GET/DATA
+COMENTARIO: retorna el valor de la variable mencionada en el anterior comando.
+
+Operar con un dataset:                      ESPKALMAN/SEND/DATASET
+COMENTARIO: Espera a un \n que indica que el dataset ha acabado, entonces comienza a procesar.
+Cuando termine de procesar devuelve el resultado final.
+
+Terminar de usar la herramienta:            ESPKALMAN/TOOL/OFF
