@@ -67,7 +67,6 @@ int ins;
 #include "Control/Interprete.h"
 //#include "Control/Simpson.h"			//Codigo de la regla de Simpson 1/3
 
-usuario *miUsuario;						//Ver struct en usuarios.h
 
 #include "InterfacesArduino/login.h"
 #include "InterfacesArduino/getGestion.h"

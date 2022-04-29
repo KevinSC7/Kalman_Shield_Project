@@ -3,6 +3,7 @@ struct usuario{
   String nombreApellidos;
   String psw;
 };
+usuario *miUsuario;
 
 bool usuariosBegin(){
   byte timeOut = 0;
