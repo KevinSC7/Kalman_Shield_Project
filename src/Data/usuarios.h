@@ -68,7 +68,18 @@ bool resetDatosUsuario(){
   LittleFS.remove("/MisUsuarios.txt");
   if(!usuariosBegin()) {
 		Serial.println("Error: en SPIFFS al cargar datos del usuario");
-	}
+    return false;
+	}else{
+    miUsuario = getUser();
+    if(miUsuario){
+			Serial.println(miUsuario->user);
+			Serial.println(miUsuario->nombreApellidos);
+			Serial.println(miUsuario->psw);
+		}else{
+			Serial.println("Error: Fallo en getUser");
+      return false;
+		}
+  }
   Serial.println("OK");
   return true;
 }

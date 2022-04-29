@@ -86,16 +86,11 @@ void setup() {
 	gpsSerial.begin(9600);							//Baudios del puerto serie del GPS
 	actualConf[0]=actualConf[1]=actualConf[2]=actualConf[3]=actualConf[4] = 0;
 	datosGps = "";
-	//prueba
-	actualConf[0]=true;
-	tiempo_ms = 1000L;
-	idConf = 1;										//No hay configuracion cargada
-	actualConf[1]=true;
-	//prueba
+	idConf = 0;										//No hay configuracion cargada
 	tipoErrorGestion = NO_ERROR;					//Acceso a gestion sin errores
 	tipoErrorLogin = NO_ERROR;						//Acceso a login sin errores
 	ejecutando = NO_RUN;							//No esta ejecutandose la configuracion
-	//tiempo_ms = 0L;							//Tasa de envio de datos 0ms
+	tiempo_ms = 0L;									//Tasa de envio de datos 0ms
 
 	//PREPARAR DATOS DEL AP
 	if(!APbegin()) {								//Preparar carga SPIFFS seccion DatosAP.txt
@@ -461,6 +456,8 @@ void setup() {
 			if(request->arg("et") != ""){
 				ejecutando = NO_RUN;					//Borrar todas -> se para, no conf, no ejecuta
 				resetArrayBool5();						//No configuraciones -> arraybool vacio
+				tiempo_ms = 0L;							//Por si habia alguna cargada
+				idConf = 0;								//Por si habia alguna cargada
 				resetDatosConfiguraciones();			//Borro todas de la SPIFFS
 				request->redirect("/getConfiguraciones");
 			}else{
