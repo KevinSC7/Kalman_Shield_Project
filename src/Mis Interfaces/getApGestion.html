@@ -1,0 +1,77 @@
+<html>
+<meta name='viewport' content='width=320, initial-scale=0.7'>
+    <head>
+        <title>GESTION DEL AP</title>
+    </head>
+   	<style>
+       header, footer { padding: 0em;color: white;background-color: Black;text-align: center;}
+       table {width: 30%; border: 2px; margin: auto;}
+       .borde {border: 3px solid #dddddd;}
+
+       input[type=text],input[type=password]{border: 2px solid; overflow: hidden; margin-right: 10px; max-width: 40%; float: right;}
+        label{float: left;}
+
+       p {font-size: 20px;}
+       .protegido {background-color: #080808; font-size: 10px;}
+       .protegido:hover{background-color: gray;}
+       .botonVerde {background-color: #094709; color: white;border: 3px solid #080808;border-radius: 12px; height: 30px; font-size: 15px;}
+       .botonVerde:hover {background-color: #229422} 
+       @media only screen and (orientation:portrait){
+            body {margin-left: 6em;}
+            html { 
+                transform: rotate(90deg); 
+                transform-origin: right top;
+                width: 100vh; 
+                overflow-x: hidden; 
+                position: absolute; 
+                top: 100%; 
+                right: 0;
+            }
+        }
+    </style>
+<body>
+	<header>
+    	<h1>Gestion del AP</h1>
+    </header>
+
+<table>
+    <tr>
+        <th>
+            <form method="post" action="/logout">
+                <input type="submit" class="botonVerde" value="Volver" style="width: 150px;float: left;">
+            </form>
+        </th>
+        <th>
+            <form method="post" action="/logout">
+                <input type="submit" class="botonVerde" value="Cerrar sesion" style="width: 150px;float: right;">
+            </form>
+        </th>
+    </tr>
+    <tr style="vertical-align: top;">
+        <th colspan="2" class="borde">
+            <hr>
+            <p><b>Configuración AP</b></p>
+            <form method="post" action='/postSSID'>
+                
+                <label style="float: left;" for="SSID">Nueva SSID*:</label>
+                <input style="float: right;" type="text" maxlength="20" required name="SSID">
+                <br></br>
+                <label style="float: left;" for="actualpsw">Contraseña actual*:</label>
+                <input style="float: right;" class="protegido" type="text" name="actualpsw" readonly>
+                <br></br>
+                <label style="float: left;" for="psw">Nueva contraseña*:</label>
+                <input style="float: right;" type="password" maxlength="20" minlength="8" required name="psw">
+                <br></br>
+                <label for="retype">Retype*:</label>
+                <input type="password" maxlength="20" minlength="8" name="retype" required>
+                <br></br>
+                <input type='submit' class="botonVerde" value='Establecer'>
+                <hr>
+                <div id="errorPsw" style="color: red; width: 100%; margin-top: 1em;">Tipo error</div>
+            </form>
+        </th>
+</table>
+<hr>
+<footer>Shield Kalman ESP8266-12e de KevinSC<br>Copyright &copy; Krobotics</footer>
+</body>
+</html>

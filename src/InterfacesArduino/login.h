@@ -1,5 +1,5 @@
 String getLogin(byte tipoError){
-	String html="<html><meta name='viewport' content='width=320, initial-scale=0.7'><head><title>LOGIN</title></head>";
+	String html="<html><meta name='viewport' content='width=320, initial-scale=0.7, user-scalable=0'><head><title>LOGIN</title></head>";
    	html+="<style>header, footer { padding: 0em;color: white;background-color: Black;text-align: center;}td, th {border: 3px solid #dddddd;text-align: center;}";
    	html+="input[type=text],input[type=password]{border: 2px solid;}";
 	html+="input[type=submit] {color: white;border: 3px solid #080808; border-radius: 12px;font-size: 15px; width: 10%; margin-top: 5px;}";

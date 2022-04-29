@@ -1,0 +1,96 @@
+<html>
+<meta name='viewport' content='width=320, initial-scale=0.7'>
+    <head>
+        <title>GESTION DE DATOS</title>
+    </head>
+   	<style>
+       header, footer { padding: 0em;color: white;background-color: Black;text-align: center;}
+       table {width: 20%; border: 2px; margin: auto;}
+       .borde {border: 3px solid #dddddd;}
+       label, input[type=radio], input[type=checkbox] { float: left; text-align: left;}
+       input[type=number] { float: left;border: 2px solid;margin-left: 20px;}
+       p {font-size: 20px;}
+       .protegido {background-color: #080808; font-size: 10px;}
+       .protegido:hover{background-color: gray;}
+       .botonRojo {background-color: #a50a0a; color: white;border: 3px solid #080808;border-radius: 12px; height: 30px; font-size: 15px;}
+       .botonRojo:hover {background-color: #fc0f0f;}
+       .botonVerde {background-color: #094709; color: white;border: 3px solid #080808;border-radius: 12px; height: 30px; font-size: 15px;}
+       .botonVerde:hover {background-color: #229422}
+        
+    </style>
+    <script>
+        function showsText(object){
+            if(object.value == 1){
+                document.getElementById("setTime").hidden = false;
+            }else{
+                document.getElementById("setTime").hidden = true;
+            }
+        }
+        
+    </script>
+<body>
+	<header>
+    	<h1>Gestion de datos</h1>
+    </header>
+
+<table>
+    <tr>
+        <th>
+            <form method="post" action="/logout">
+                <input type="submit" class="botonVerde" value="Gestion Usuario" style="width: 150px;">
+            </form>
+        </th>
+        <th>
+            <form method="post" action="/logout">
+                <input type="submit" class="botonVerde" value="Gestion AP" style="width: 150px;">
+            </form>
+        </th>
+        <th>
+            <form method="post" action="/logout">
+                <input type="submit" class="botonVerde" value="Cerrar sesion" style="width: 150px;">
+            </form>
+        </th>
+    </tr>
+    <tr style="vertical-align: top;">
+        <th colspan="3" class="borde">
+            <hr>
+            <p align="center"><b>Configuración herramientas</b></p>
+            <hr>
+            <div style="width: 200px; margin: auto;">
+                <p style="font-size: 15px; text-align: left;">ID configuración:</p>
+                <form>
+                    <input type='submit' class="botonVerde" style="width: 200px;" value='Nueva'>
+                </form>
+            </div>
+            
+            <hr>
+            <div style="margin: auto; margin-left: 30%;">
+                <form >
+                    <label><input type="radio" onchange="showsText(this);" name="tipoEnvio" id='asin' value="0" checked>Envío asincrónico de datos</label>
+                    <br></br>
+                    <label><input type="radio" onchange="showsText(this);" name="tipoEnvio" id="sin" value="1">Envío síncrono de datos</label>
+                    <br></br>
+                    <input type="number" name='setTime' id="setTime" placeholder="Tiempo en milisegundos (min:100ms=0.1s)" hidden>
+                    <br></br>
+                    <label><input type="checkbox" name="ib" id="ib" value="0">Datos IMU en bruto</label>
+                    <br></br>
+                    <label><input type="checkbox" name="gb" id="gb" value="1">Datos GPS en bruto</label>
+                    <br></br>
+                    <label><input type="checkbox" name="ip" id="ip" value="2">Datos del IMU procesados con Kalman</label>
+                    <br></br>
+                    <label><input type="checkbox" name="fus" id="fus" value="2">Fusion datos IMU+GPS con a ssass a bbbb Kalman</label>
+                    <br></br>
+            </div>
+                <input type='submit' class="botonRojo" name='accion' value='Ejecutar/Parar' style="width: 200px; float: left;">
+                <input type='submit' class="botonVerde" name='accion' style="width: 200px; float: right;" value='Actualizar'><br></br>
+                <input type='submit' class="botonVerde" name='accion' style="width: 100%; margin-top: 4px;" value='Configuraciones'><br></br>
+                <hr>
+                <div id="errorPsw" style="color: red; width: 100%; margin-top: 1em;">Tipo error</div>
+            </form>
+        </th>
+    </tr>
+</table>
+<hr>
+<footer>Shield Kalman ESP8266-12e de KevinSC<br>Copyright &copy; Krobotics</footer>
+</body>
+</html>

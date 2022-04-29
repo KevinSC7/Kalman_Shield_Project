@@ -1,4 +1,6 @@
 //INSTALACION IDE: https://www.luisllamas.es/como-programar-arduino-con-visual-studio-code-y-plaftormio/
+//SPIFFS: https://esp8266-arduino-spanish.readthedocs.io/es/latest/filesystem.html#esquema-de-la-memoria-flash
+
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>		//Para configuración SSID, AP y uso de otras funciones
@@ -24,17 +26,16 @@
 #define MPU6050_adress 0x68
 
 AsyncWebServer server(80);				//Puerto 80
-SoftwareSerial gpsSerial(13, 15); // RX(D7), TX(D8) -> UART para GPS
+SoftwareSerial gpsSerial(13, 15); // RX(D7), TX(D8) -> UART para GPS (GPIO_OK_Serial.PNG)
 
 const char* ssid = "KalmanShield";		//Nombre baliza AP por defecto (RF1)
 const char* password = "KalmanShield";	//8 caracteres (Req. seguridad) y por defecto esa contraseña (RF1)
 String currentSSID = ssid;
 String currentPSW = password;
-bool autorizacion = false;
+bool autorizacion = false;				//Logeo correcto = true;
 bool actualConf[5]={0,0,0,0,0};			//5 datos: async/sinc, ib, gb, ip, fus
-bool ejecutando;
-String miConf;							//Configuracion cargada
-double tiempo_ms;						//Ultimo dato de la configuracion actual, tasa de envio
+bool ejecutando;						//RUN: ejecuta en main lo de actualConf, NO_RUN=STOP
+long tiempo_ms;							//Ultimo dato de la configuracion actual, tasa de envio
 int idConf;								//Indice de la actual configuracion
 byte tipoErrorGestion;					//Tipo de error al cargar gestion
 byte tipoErrorLogin;					//Tipo de error al cargar login
@@ -69,7 +70,10 @@ int ins;
 usuario *miUsuario;						//Ver struct en usuarios.h
 
 #include "InterfacesArduino/login.h"
-#include "InterfacesArduino/gestionDatos.h"
+#include "InterfacesArduino/getGestion.h"
+#include "InterfacesArduino/getApGestion.h"
+#include "InterfacesArduino/getUserGestion.h"
+
 #include "InterfacesArduino/confirm_AP_USER.h"
 #include "InterfacesArduino/datosConfiguraciones.h"
 
@@ -80,13 +84,18 @@ void notFound(AsyncWebServerRequest *request) {	//Para URL no encontrada
 void setup() {
     Serial.begin(115200);							//Baudios del puerto serie el monitor
 	gpsSerial.begin(9600);							//Baudios del puerto serie del GPS
+	actualConf[0]=actualConf[1]=actualConf[2]=actualConf[3]=actualConf[4] = 0;
 	datosGps = "";
-	idConf = 0;										//No hay configuracion cargada
-	miConf = NO_CONFIG;								//No hay configuracion cargada
+	//prueba
+	actualConf[0]=true;
+	tiempo_ms = 1000L;
+	idConf = 1;										//No hay configuracion cargada
+	actualConf[1]=true;
+	//prueba
 	tipoErrorGestion = NO_ERROR;					//Acceso a gestion sin errores
 	tipoErrorLogin = NO_ERROR;						//Acceso a login sin errores
 	ejecutando = NO_RUN;							//No esta ejecutandose la configuracion
-	tiempo_ms=(double)0;							//Tasa de envio de datos 0ms
+	//tiempo_ms = 0L;							//Tasa de envio de datos 0ms
 
 	//PREPARAR DATOS DEL AP
 	if(!APbegin()) {								//Preparar carga SPIFFS seccion DatosAP.txt
@@ -127,8 +136,6 @@ void setup() {
 
     server.on("/getLogin", HTTP_GET, [] (AsyncWebServerRequest *request) {		//http:IP/getLogin
 		AsyncResponseStream *response = request->beginResponseStream("text/html");
-		idConf = 0;									//Siempre que haya logout->no hay configuracion
-		miConf = NO_CONFIG;
 		response->print(getLogin(tipoErrorLogin));	//Llamada a la intefaz login, inicialmente sin errores
         request->send(response);
     });
@@ -160,7 +167,27 @@ void setup() {
 	server.on("/getGestion", HTTP_GET, [] (AsyncWebServerRequest *request) {	//http:IP/getGestion
 		AsyncResponseStream *response = request->beginResponseStream("text/html");
 		if(autorizacion){
-			response->print(getGestionDatos(tipoErrorGestion, miConf, ejecutando));
+			response->print(getGestion());
+			request->send(response);
+		}else{
+			request->redirect("/getLogin");
+		}
+    });
+
+	server.on("/getUserGestion", HTTP_GET, [] (AsyncWebServerRequest *request) {	//http:IP/getUserGestion
+		AsyncResponseStream *response = request->beginResponseStream("text/html");
+		if(autorizacion){
+			response->print(getUserGestion());
+			request->send(response);
+		}else{
+			request->redirect("/getLogin");
+		}
+    });
+
+	server.on("/getApGestion", HTTP_GET, [] (AsyncWebServerRequest *request) {	//http:IP/getApGestion
+		AsyncResponseStream *response = request->beginResponseStream("text/html");
+		if(autorizacion){
+			response->print(getApGestion());
 			request->send(response);
 		}else{
 			request->redirect("/getLogin");
@@ -177,7 +204,7 @@ void setup() {
 			
 			if(d2 != d3){
 				tipoErrorGestion = ERROR_RETYPE_SSID;
-				request->redirect("/getGestion");
+				request->redirect("/getApGestion");
 			}else{
 				datos = d1+"/"+d2;
 				tipoErrorGestion = NO_ERROR;
@@ -214,12 +241,15 @@ void setup() {
 				if(setDatosAP(nssid, npsw)){
 					currentSSID=getSSID(); currentPSW=getPSW();
 					WiFi.softAP(currentSSID, currentPSW, 1, 0, 1);
+					request->redirect("/getGestion");
 				}else{
 					Serial.println("No se pudo establecer nuevos datos de configuracion AP");
 					tipoErrorGestion = ERROR_DATA_AP;
+					request->redirect("/getApGestion");
 				}
+			}else{//Cancelar
+				request->redirect("/getApGestion");
 			}
-			request->redirect("/getGestion");
 		}
     });
 
@@ -233,7 +263,7 @@ void setup() {
 			String r = request->arg("retype");
 			if(p != r){
 				tipoErrorGestion = ERROR_RETYPE_USER;
-				request->redirect("/getGestion");
+				request->redirect("/getUserGestion");
 			}else{
 				datos = u+"/"+n+"/"+p;
 				tipoErrorGestion = NO_ERROR;
@@ -274,56 +304,65 @@ void setup() {
 					}else{
 						Serial.println("Error: Fallo en getUser");
 					}
+					request->redirect("/getGestion");
 				}else{
 					Serial.println("No se pudo establecer nuevos datos de configuracion del usuario");
 					tipoErrorGestion = ERROR_DATA_USER;
+					request->redirect("/getUserGestion");
 				}
-			}//else 'Cancelar'
-			request->redirect("/getGestion");
+			}else{//Cancelar
+				request->redirect("/getUserGestion");
+			}
 		}
     });
+
+	server.on("/postQuitarCargada", HTTP_POST, [] (AsyncWebServerRequest *request) { //http:IP/postQuitarCargada
+		//Esta es para cuando se pulse "Nueva" para crear una nueva configuración
+		if(!autorizacion){
+			request->redirect("/getLogin");
+		}else{
+			idConf = 0;						//No hay nada cargado
+			ejecutando = NO_RUN;			//Si no esta cargada n o puede ejecutarse
+			tiempo_ms = 0L;					//Si es asincronico da igual es 0, si es sincronico a 0
+			resetArrayBool5();				//Quitar carga del array de booleanos
+			request->redirect("/getGestion");//Vuelvo a gestion sin nada cargado
+		}
+	});
 
 	server.on("/postGestion", HTTP_POST, [] (AsyncWebServerRequest *request) {	//http:IP/postGestion
 		//Ejecutar, Stop, Guardar, Actualizar, Configuraciones
 		if(!autorizacion){
 			request->redirect("/getLogin");
 		}else{
-			bool selectedAtListOne = false;
-			String accion = request->arg("accion");
-			String tipoEnvio = request->arg("tipoEnvio");
-			String d = request->arg("setTime");
-			Serial.println("miConf: "+request->arg("miConf"));
-			if(request->arg("miConf") == 0){
-				idConf = 0;
-				miConf = NO_CONFIG;
-			}
+			bool selectedAtListOne = false;				//Se ha seleccionado al menos 1
+			String accion = request->arg("accion");		//Ejecutar, Stop, Configuraciones, Guardar, Actualizar
+			String tipoEnvio = request->arg("tipoEnvio");//asyn=0, sin=1
+			String d = request->arg("setTime");			//Tiempo en milisegundos
+
 			if(tipoEnvio == "0"){
-				tiempo_ms=0;
+				tiempo_ms = 0L;
 			}else{
-				if(d.indexOf(',') != -1 || d.indexOf('.') != -1){
-					Serial.println("Error solo numeros enteros");
-					tiempo_ms=0;
-				}else{
-					tiempo_ms=d.toDouble();
-				}
+				tiempo_ms=(long)StringToInt(d);//Esta funcion me da un int en vez de un long (hecha por mi)
+				//Si hay algo que no sea un numero -> 0
+				if(tiempo_ms == 0L)Serial.println("WARNING: solo numeros enteros > 0");
 			}
-			String df = tipoEnvio;
-			if(request->arg("ib")=="ok"){
+			String df = tipoEnvio;						//Ire concatenado los valores del formulario
+			if(request->hasArg("ib")){
 				df+=1; selectedAtListOne = true;
 			}else{
 				df+=0;
 			}
-			if(request->arg("gb")=="ok"){
+			if(request->hasArg("gb")){
 				df+=1; selectedAtListOne = true;
 			}else{
 				df+=0;
 			}
-			if(request->arg("ip")=="ok"){
+			if(request->hasArg("ip")){
 				df+=1; selectedAtListOne = true;
 			}else{
 				df+=0;
 			}
-			if(request->arg("fus")=="ok"){
+			if(request->hasArg("fus")){
 				df+=1; selectedAtListOne = true;
 			}else{
 				df+=0;
@@ -332,55 +371,73 @@ void setup() {
 				df+="-0";
 			}else{
 				df+="-";
-				df+=d;
+				df+=(String)StringToInt(d);//Porque puede ser no valida '100.1' o '12a2' ...
 			}
 			//Fin de recogida de datos
 			
-			if(accion == "Configuraciones"){
+			if(accion == "Configuraciones"){//*********************CONFIGURACIONES
 				tipoErrorGestion = NO_ERROR;
-				idConf = 0;
-				miConf = NO_CONFIG;
 				request->redirect("/getConfiguraciones");
-			}else if(accion == "Guardar"){
-				if(selectedAtListOne){//Se ha checkeado al menos un checkbox
-					if(addNewConf(df)){	//Añadida
-						tipoErrorGestion = NO_ERROR;
-						request->redirect("/getConfiguraciones");
-					}else{				//No se pudo añadir
-						tipoErrorGestion = ERROR_CONF_ADD;
-						request->redirect("/getGestion");
-					}
-				}else{
-					tipoErrorGestion = ERROR_NO_SELECT_CHECKBOX;
+
+			}else if(accion == "Guardar"){	//*********************GUARDAR
+				if(idConf > 0){
+					Serial.println("ERROR: se ha intentado guardar como nueva conf una cargada");
 					request->redirect("/getGestion");
-				}
-			}else if(accion == "Actualizar"){
-				if(selectedAtListOne){
-					if(updateConfig(idConf, df)){
-						tipoErrorGestion = NO_ERROR;
-						request->redirect("/getConfiguraciones");
+				}else{
+					if(selectedAtListOne){//Se ha checkeado al menos un checkbox
+						if(addNewConf(df)){	//Añadida
+							tipoErrorGestion = NO_ERROR;
+							request->redirect("/getConfiguraciones");
+						}else{				//No se pudo añadir
+							tipoErrorGestion = ERROR_CONF_ADD;
+							request->redirect("/getGestion");
+						}
 					}else{
-						tipoErrorGestion = ERROR_NO_UPDATE;
+						tipoErrorGestion = ERROR_NO_SELECT_CHECKBOX;
 						request->redirect("/getGestion");
 					}
-				}else{
-					tipoErrorGestion = ERROR_NO_SELECT_CHECKBOX;
+				}
+			}else if(accion == "Actualizar"){//*********************ACTUALIZAR
+				if(idConf == 0){//No hay configuracion cargada, no se puede actualizar una sin cargarse
+					Serial.println("ERROR: se ha intentado actualizar cuando no hay ninguna conf cargada");
 					request->redirect("/getGestion");
-				}
-			}else if(accion == "Ejecutar"){
-				if(selectedAtListOne){
-					tipoErrorGestion = NO_ERROR;
-					configToBoolArray5(df);
-					ejecutando = RUN;
 				}else{
-					tipoErrorGestion = ERROR_NO_SELECT_CHECKBOX;
+					if(selectedAtListOne){
+						if(updateConfig(idConf, df)){
+							tipoErrorGestion = NO_ERROR;
+							request->redirect("/getConfiguraciones");
+						}else{
+							tipoErrorGestion = ERROR_NO_UPDATE;
+							request->redirect("/getGestion");
+						}
+					}else{
+						tipoErrorGestion = ERROR_NO_SELECT_CHECKBOX;
+						request->redirect("/getGestion");
+					}
 				}
-				request->redirect("/getGestion");
+			}else if(accion == "Ejecutar"){//*********************EJECUTAR
+				if(idConf == 0){//No hay configuracion cargada, no se puede ejecutar una sin cargarse
+					Serial.println("ERROR: se ha intentado ejecutar cuando no hay ninguna conf cargada");
+				}else{
+					if(selectedAtListOne){
+						tipoErrorGestion = NO_ERROR;
+						configToBoolArray5(df);
+						ejecutando = RUN;
+					}else{
+						tipoErrorGestion = ERROR_NO_SELECT_CHECKBOX;
+					}
+				}
+				request->redirect("/getGestion");//Pase lo que pase -> gestion
 			}else if(accion == "Stop"){
-				resetArrayBool5();
-				ejecutando = NO_RUN;
+				if(idConf == 0){//No hay configuracion cargada, no se puede parar sino hay cargada
+					Serial.println("ERROR: se ha intentado parar cuando no hay ninguna conf cargada");
+				}else{
+					ejecutando = NO_RUN;
+				}
 				request->redirect("/getGestion");
 			}else{//No existe ese boton, intento de acceso ilegal (por seguridad)
+				Serial.println("No existe el boton");
+				Serial.println(accion);
 				autorizacion=false;
 				request->redirect("/getLogin");
 			}
@@ -402,21 +459,36 @@ void setup() {
 			request->redirect("/getLogin");
 		}else{
 			if(request->arg("et") != ""){
-				resetDatosConfiguraciones();
+				ejecutando = NO_RUN;					//Borrar todas -> se para, no conf, no ejecuta
+				resetArrayBool5();						//No configuraciones -> arraybool vacio
+				resetDatosConfiguraciones();			//Borro todas de la SPIFFS
 				request->redirect("/getConfiguraciones");
 			}else{
 				String idpulsado = request->arg("idpulsado");
-				idConf = StringToInt(idpulsado);
+				int id = StringToInt(idpulsado);		//Id de la conf pulsada, puede ser boton "Cargar" o "Eliminar"
 				String botonpulsado = request->arg("botonpulsado");
 				if(botonpulsado == "Cargar"){
-					miConf = getConfig(idConf);
+					ejecutando = NO_RUN;				//Si le doy a cargar -> se para, se carga pero no ejecuta aun
+					String miConf = getConfig(id);		//Obtengo la configuracion de la SPIFFS
+					if(!configToBoolArray5(miConf)){	//La paso a array de booleanos
+						Serial.println("ERROR: no cargado en arrayBool");
+						tiempo_ms = 0L;
+					}else{//Si se cargo correctamente, no era vacio, cargo tiempo_ms
+						tiempo_ms = StringToInt(miConf.substring(6));//Obtengo el valor de los ms
+						idConf = id;					//Set indice de la configuracion cargada
+					}
 					request->redirect("/getGestion");
 				}else if(botonpulsado == "Eliminar"){
-					if(!deleteConf(idConf)){
+					if(!deleteConf(id)){
 						Serial.println("Error al borrar la configuracion");
+					}else{
+						if(id == idConf){		//Si la que se ha borrado es la que estaba cargada
+							ejecutando = NO_RUN;//Si se estuviera ejecutando se para
+							tiempo_ms = 0L;		//Sea el que sea a 0
+							idConf = 0;			//Si ya no esta no esta cargada
+							resetArrayBool5();	//Se descarga de arrayBool
+						}//Sino es el mismo deja todo como estaba, solo borra datos
 					}
-					idConf = 0;
-					miConf = NO_CONFIG;
 					request->redirect("/getConfiguraciones");
 				}else{//No existe ese boton, intento de acceso ilegal (por seguridad)
 					autorizacion=false;
@@ -450,26 +522,29 @@ void loop() {
 	ins = getInstruccion(comandoRecibido, parametros);
 	if( ins != 0)exec(ins, parametros);
 	
-	if(actualConf[1]){
+	if (ejecutando){
+		if(actualConf[1]){
 		Serial.println("IMU RAW");
-	}
-	if(actualConf[2]){
-		Serial.println("GPS");
-	}
-	if(actualConf[3]){
-		Serial.println("IMU Kalman");
-	}
-	if(actualConf[4]){
-		Serial.println("Fusion");
+		}
+		if(actualConf[2]){
+			Serial.println("GPS");
+		}
+		if(actualConf[3]){
+			Serial.println("IMU Kalman");
+		}
+		if(actualConf[4]){
+			Serial.println("Fusion");
+		}
 	}
 	
 	delay(1000);
 
-	if ((millis() - loop_timer) >= tiempo_ms){
+	if ((millis() - loop_timer) >= (unsigned long)tiempo_ms){
 		Serial.println("Dentro");
 		loop_timer = millis();
 	}
-	/*if ((millis() - loop_timer) >= 2000){
+	/*
+	if ((millis() - loop_timer) >= 2000){
 		tiempo_ejecucion = (millis() - loop_timer) / 1000;//A segundos
 		MPU6050_leer();
 		MPU6050_procesado1();

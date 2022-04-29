@@ -111,10 +111,9 @@ bool exec(int num, String parametros){//Sintacticamente correcto, aqui ver la gr
 		else{				//Comienza a cargarla
 			String pconf = getConfig(nconf);
 			if(pconf != ""){//Si existe la carga
-				miConf = pconf;
 				idConf = nconf;
 			}
-			if(!configToBoolArray5(miConf))Serial.println("ERROR");	//Cambia el array de ejecucion
+			if(!configToBoolArray5(pconf))Serial.println("ERROR");	//Cambia el array de ejecucion
 			else{
 				if(actualConf[0])tiempo_ms = 0;
 				else tiempo_ms = StringToInt(getConfig(nconf).substring(6));

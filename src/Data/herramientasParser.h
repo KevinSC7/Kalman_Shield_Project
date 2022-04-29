@@ -107,7 +107,7 @@ int StringBinToInt(String cadena){
   return resultado;
 }
 
-bool configToBoolArray5(String c){
+bool configToBoolArray5(String c){// 00000-0/10000-100/01000-0...
   if(c.isEmpty())return false;
   for(int i = 0; i < 5; i++){
     if(c[i]=='1')actualConf[i] = true;
