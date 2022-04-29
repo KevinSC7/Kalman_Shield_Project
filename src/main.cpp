@@ -20,7 +20,7 @@
 #define ERROR_CONF_ADD 7
 #define ERROR_NO_SELECT_CHECKBOX 8
 #define ERROR_NO_UPDATE 9
-#define NO_CONFIG ""
+#define ERROR_NO_PRINTABLE 10
 #define NO_RUN 0
 #define RUN 1
 #define MPU6050_adress 0x68
@@ -38,6 +38,8 @@ bool ejecutando;						//RUN: ejecuta en main lo de actualConf, NO_RUN=STOP
 long tiempo_ms;							//Ultimo dato de la configuracion actual, tasa de envio
 int idConf;								//Indice de la actual configuracion
 byte tipoErrorGestion;					//Tipo de error al cargar gestion
+byte tipoErrorApGestion;				//Tipo de error al cargar gestion del AP
+byte tipoErrorUserGestion;				//Tipo de error al cargar gestion del Usuario
 byte tipoErrorLogin;					//Tipo de error al cargar login
 String datos;							//Usos varios, datos globales
 
@@ -86,8 +88,10 @@ void setup() {
 	actualConf[0]=actualConf[1]=actualConf[2]=actualConf[3]=actualConf[4] = 0;
 	datosGps = "";
 	idConf = 0;										//No hay configuracion cargada
-	tipoErrorGestion = NO_ERROR;					//Acceso a gestion sin errores
 	tipoErrorLogin = NO_ERROR;						//Acceso a login sin errores
+	tipoErrorGestion = NO_ERROR;					//Acceso a gestion sin errores
+	tipoErrorApGestion = NO_ERROR;					//Acceso a Ap gestion sin errores
+	tipoErrorUserGestion = NO_ERROR;				//Acceso a user gestion sin errores
 	ejecutando = NO_RUN;							//No esta ejecutandose la configuracion
 	tiempo_ms = 0L;									//Tasa de envio de datos 0ms
 
@@ -161,6 +165,8 @@ void setup() {
 	server.on("/getGestion", HTTP_GET, [] (AsyncWebServerRequest *request) {	//http:IP/getGestion
 		AsyncResponseStream *response = request->beginResponseStream("text/html");
 		if(autorizacion){
+			tipoErrorApGestion = NO_ERROR;	//Si cambio de pagina los errores de las otras desaparecen
+			tipoErrorUserGestion = NO_ERROR;//Si cambio de pagina los errores de las otras desaparecen
 			response->print(getGestion());
 			request->send(response);
 		}else{
@@ -171,6 +177,8 @@ void setup() {
 	server.on("/getUserGestion", HTTP_GET, [] (AsyncWebServerRequest *request) {	//http:IP/getUserGestion
 		AsyncResponseStream *response = request->beginResponseStream("text/html");
 		if(autorizacion){
+			tipoErrorGestion = NO_ERROR;		//Si cambio de pagina los errores de las otras desaparecen
+			tipoErrorApGestion = NO_ERROR;		//Se suele pasar por gestion, pero si se accede por url el error deberia de haber desaparecido
 			response->print(getUserGestion());
 			request->send(response);
 		}else{
@@ -181,6 +189,8 @@ void setup() {
 	server.on("/getApGestion", HTTP_GET, [] (AsyncWebServerRequest *request) {	//http:IP/getApGestion
 		AsyncResponseStream *response = request->beginResponseStream("text/html");
 		if(autorizacion){
+			tipoErrorGestion = NO_ERROR;
+			tipoErrorUserGestion = NO_ERROR;
 			response->print(getApGestion());
 			request->send(response);
 		}else{
@@ -195,15 +205,20 @@ void setup() {
 			String d1 = request->arg("SSID");
 			String d2 = request->arg("psw");
 			String d3 = request->arg("retype");
-			
-			if(d2 != d3){
-				tipoErrorGestion = ERROR_RETYPE_SSID;
+			if(isValidString(d1) && isValidString(d2)){	//Todo char ascii es imprimible
+				if(d2 != d3){
+					tipoErrorGestion = ERROR_RETYPE_SSID;
+					request->redirect("/getApGestion");
+				}else{
+					datos = d1+"/"+d2;
+					tipoErrorGestion = NO_ERROR;
+					request->redirect("/getConfirmSSID");
+				}
+			}else{										//Algun ascii no imprimible
+				tipoErrorApGestion = ERROR_NO_PRINTABLE;
 				request->redirect("/getApGestion");
-			}else{
-				datos = d1+"/"+d2;
-				tipoErrorGestion = NO_ERROR;
-				request->redirect("/getConfirmSSID");
 			}
+			
 		}
     });
 
@@ -255,14 +270,21 @@ void setup() {
 			String n = request->arg("NombreApellidos");
 			String p = request->arg("psw");
 			String r = request->arg("retype");
-			if(p != r){
-				tipoErrorGestion = ERROR_RETYPE_USER;
+
+			if(isValidString(u) && isValidString(n) && isValidString(p)){	//Todo char ascii es imprimible
+				if(p != r){
+					tipoErrorGestion = ERROR_RETYPE_USER;
+					request->redirect("/getUserGestion");
+				}else{
+					datos = u+"/"+n+"/"+p;
+					tipoErrorGestion = NO_ERROR;
+					request->redirect("/getConfirmUser");
+				}
+			}else{															//Algun ascii no imprimible
+				tipoErrorUserGestion = ERROR_NO_PRINTABLE;
 				request->redirect("/getUserGestion");
-			}else{
-				datos = u+"/"+n+"/"+p;
-				tipoErrorGestion = NO_ERROR;
-				request->redirect("/getConfirmUser");
 			}
+			
 		}
     });
 
@@ -505,8 +527,8 @@ void setup() {
 
 void loop() {
 	if(WiFi.softAPgetStationNum() == 0){
-		autorizacion=false;//Si se desconecta se cierra la sesion
-		tipoErrorLogin = 0;//Vuelta a empezar, no hay errores
+		autorizacion=false;			//Si se desconecta se cierra la sesion
+		tipoErrorLogin = NO_ERROR;	//Vuelta a empezar, no hay errores
 	}
 
 	comandoRecibido = "";

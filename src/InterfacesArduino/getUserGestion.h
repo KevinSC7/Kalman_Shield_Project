@@ -51,11 +51,13 @@ String getUserGestion(){
     html+="<br></br>";
     html+="<input type='submit' class='botonVerde' value='Establecer'>";
     html+="<hr><div style='color: red; width: 100%; margin-top: 1em;'>";
-    if(tipoErrorGestion == ERROR_RETYPE_USER){
+    if(tipoErrorUserGestion == ERROR_RETYPE_USER){
         html+="Retype incorrecto";
     }
-    else if(tipoErrorGestion == ERROR_DATA_USER){
+    else if(tipoErrorUserGestion == ERROR_DATA_USER){
         html+="Fallo al establecer los datos";
+    }else if(tipoErrorUserGestion == ERROR_NO_PRINTABLE){
+        html+="Solo ascii imprimibles. Nada de tildes.";
     }
     html+="</div>";
     html+="</form>";

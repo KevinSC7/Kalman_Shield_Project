@@ -45,11 +45,13 @@ String getApGestion(){
     html+="<br></br>";
     html+="<input type='submit' class='botonVerde' value='Establecer'>";
     html+="<hr><div style='color: red; width: 100%; margin-top: 1em;'>";
-    if(tipoErrorGestion == ERROR_RETYPE_SSID){
+    if(tipoErrorApGestion == ERROR_RETYPE_SSID){
         html+="Retype incorrecto";
     }
-    else if(tipoErrorGestion == ERROR_DATA_AP){
+    else if(tipoErrorApGestion == ERROR_DATA_AP){
         html+="Fallo al establecer los datos";
+    }else if(tipoErrorApGestion == ERROR_NO_PRINTABLE){
+        html+="Solo ascii imprimibles. Nada de tildes.";
     }
     html+="</div>";
     html+="</form>";

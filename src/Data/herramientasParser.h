@@ -107,6 +107,16 @@ int StringBinToInt(String cadena){
   return resultado;
 }
 
+boolean isValidString(String cadena){       //Para saber si pertenece a los ascii imprimibles
+  unsigned int i = 0;
+  while (i < cadena.length())
+  {
+    if(!isPrintable(cadena[i]))return false;
+    i++;
+  }
+  return true;
+}
+
 bool configToBoolArray5(String c){// 00000-0/10000-100/01000-0...
   if(c.isEmpty())return false;
   for(int i = 0; i < 5; i++){
