@@ -1,4 +1,5 @@
-String getDatosConfiguraciones(){
+
+String principio(){
     String html="<html><meta name='viewport' content='width=320, initial-scale=0.7, user-scalable=0'><head><title>MIS CONFIGURACIONES</title></head>";
     html+="<style>header, footer { padding: 0em;color: white;background-color: Black;text-align: center;}input[type=text]{border: 2px solid;}table {width: 100%; border-collapse: separate; border-spacing: 10px;}th {border: 3px solid gray;}";
     html+=".protegido {background-color: #080808; font-size: 10px;}.protegido:hover{background-color: gray;}";
@@ -27,11 +28,14 @@ String getDatosConfiguraciones(){
     html+="<table>";
     html+="<input type='hidden' name='idpulsado' id='idpulsado' value='' />";
     html+="<input type='hidden' name='botonpulsado' id='botonpulsado' value='' />";
-    for(int i=1; i<11; i++){
-        String c = getConfig(i);
-        Serial.println(c);
-        if(c=="")break;
-        html+="<tr><th><p>Configuracion ";html.concat(i);html+=":</p><ul align='left'>";
+    
+    return html;
+}
+
+String losFor(String c, int i){   
+    String html="";
+    if(c=="")return "";
+        html+="<tr><th><p>Configuracion ";html+=(String)i;html+=":</p><ul align='left'>";
         if(c[0]=='1'){
             html+="<li>Envio sincronizado: ";html+=c.substring(6); html+="ms</li>";
         }else{
@@ -40,11 +44,16 @@ String getDatosConfiguraciones(){
         if(c[1]=='1')html+="<li>Datos del IMU en bruto</li>";
         if(c[2]=='1')html+="<li>Datos del GPS en bruto</li>";
         if(c[3]=='1')html+="<li>Datos IMU procesados Kalman</li>";
-        if(c[4]=='1')html+="<li>Datos fusionados IMU+GPS</li></ul>";
-        html+="</th><th class='ajustar'><input type='submit' class='cargar' id='";html.concat(i); html+="' onclick='envio(this)' value='Cargar'>";
-        html+="</th><th class='ajustar'><input type='submit' class='cancel' id='";html.concat(i); html+="' onclick='envio(this)' value='Eliminar'></th></tr>";
-    }
-    html+="</table></div>";
+        if(c[4]=='1')html+="<li>Datos fusionados IMU+GPS</li>";
+        html+="</ul></th><th class='ajustar'><input type='submit' class='cargar' id='";html+=(String)i; html+="' onclick='envio(this)' value='Cargar' />";
+        html+="</th><th class='ajustar'><input type='submit' class='cancel' id='";html+=(String)i; html+="' onclick='envio(this)' value='Eliminar' /></th></tr>";
+    
+    return html;
+}
+
+String final(){
+    String html="</table>";
+    html+="</div>";
     html+="<table><tr><th class='ajustar' colspan='3'><input type='submit' name='et' class='cancel' value='Eliminar todas'></th></tr></table>";
     html+="</form>";
     

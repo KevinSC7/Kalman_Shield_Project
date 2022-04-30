@@ -110,7 +110,7 @@ String getGestion(){
     html+="<input type='submit' class='botonVerde' style='width: 100%; margin-top: 4px;' name='accion' value='Configuraciones'><br></br>";
     html+="<hr><div style='color: red; width: 100%; white-space: normal; margin-top: 1em;'>";
     if(tipoErrorGestion == ERROR_CONF_ADD){
-        html+="No se pudo guardar. Máximo de configuraciones: 10";
+        html+="No se pudo guardar. M"; html.concat((char)225); html+="ximo de configuraciones: 10";
     }
     else if(tipoErrorGestion == ERROR_NO_SELECT_CHECKBOX){
         html+="Escoja min"; html.concat((char)237); html+="mo una herramienta(checkbox).";

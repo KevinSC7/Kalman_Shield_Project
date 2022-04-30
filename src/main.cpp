@@ -459,13 +459,20 @@ void setup() {
 			}
 		}
 	});
-
+	
 	server.on("/getConfiguraciones", HTTP_GET, [] (AsyncWebServerRequest *request) {//http:IP/getConfirmUser
 		AsyncResponseStream *response = request->beginResponseStream("text/html");
 		if(!autorizacion){
 			request->redirect("/getLogin");
 		}else{
-			response->print(getDatosConfiguraciones());
+			response->print(principio());
+
+			for(int i=1; i<11; i++){
+				String tmp = losFor(getConfig(i), i);
+				if(tmp != "")response->print(tmp);
+			}
+
+			response->print(final());
 			request->send(response);
 		}
 	});
@@ -555,7 +562,7 @@ void loop() {
 		}
 	}
 	
-	delay(1000);
+	delay(500);
 
 	if ((millis() - loop_timer) >= (unsigned long)tiempo_ms){
 		Serial.println("Dentro");

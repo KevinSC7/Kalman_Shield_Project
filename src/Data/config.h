@@ -52,6 +52,7 @@ bool addNewConf(String config){
             datos+=config+"/";
             break;
         }
+        if(i == 10)return false;//Ya hubiese salido en el break, es la 11 conf
     }
     Serial.println("add: "+datos);//datos esta sin retorno de carro
     file = LittleFS.open("/Configuraciones.txt", "w+");
