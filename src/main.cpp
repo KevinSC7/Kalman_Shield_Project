@@ -8,7 +8,11 @@
 #include <ESPAsyncWebServer.h>	//Permite operar con peticiones web asincronicas
 #include <LittleFS.h>			//Para operar con la memoria SPIFFS del ESP826612
 #include <SoftwareSerial.h>		//Para usar dos puertos serie
-#include <Wire.h>				//Para conexión I2C con el IMU
+#include <I2Cdev.h>				//Para una mejorada conexión I2C con el IMU 
+#include <Wire.h>				//Libreria de la conexión I2C
+#include <MPU6050_6Axis_MotionApps20.h>	//Libreria del sensor inercial MPU6050 (contiene helper_3dmath.h) que
+										//ayuda con las operaciones del cuaternion
+#include <TinyGPS++.h>			//Para obtener datos (parsea) del frame del gps
 
 #define NO_ERROR 0
 #define ERROR_PSW 1
@@ -26,7 +30,13 @@
 #define MPU6050_adress 0x68
 
 AsyncWebServer server(80);				//Puerto 80
-SoftwareSerial gpsSerial(13, 15); // RX(D7), TX(D8) -> UART para GPS (GPIO_OK_Serial.PNG)
+SoftwareSerial gpsSerial(13, 15); 		// RX(D7), TX(D8) -> UART para GPS (GPIO_OK_Serial.PNG)
+TinyGPSPlus gps;						//clase TinyGPSPlus para codificacion
+TinyGPSCustom magneticVariation(gps, "GPRMC", 10);//Variacion magnetica de mi zona respecto al norte magnetico
+TinyGPSCustom magneticVariationNegative(gps, "GPRMC", 11);//Variacion magnetica de mi zona es negativa?(W)
+TinyGPSCustom latNS(gps, "GPRMC", 4);	//Latitud es norte(N) o sur(S)
+TinyGPSCustom lngEW(gps, "GPRMC", 6);	//Longitud es este(E) o oeste(W)
+
 
 const char* ssid = "KalmanShield";		//Nombre baliza AP por defecto (RF1)
 const char* password = "KalmanShield";	//8 caracteres (Req. seguridad) y por defecto esa contraseña (RF1)
@@ -43,17 +53,8 @@ byte tipoErrorUserGestion;				//Tipo de error al cargar gestion del Usuario
 byte tipoErrorLogin;					//Tipo de error al cargar login
 String datos;							//Usos varios, datos globales
 
-//GPS datos
-String datosGps;
-
-//MPU datos
-double gx, gy, gz, giro_x, giro_y, giro_z;
-double ax, ay, az, temperature;
-double accel_x, accel_y, accel_z;
-double angulo_pitch, angulo_roll, angulo_yaw;
-
 //Sincronismo variables
-unsigned long loop_timer, tiempo_ejecucion;
+unsigned long loop_timer;
 
 //Variables para interprete de comandos
 String comandoRecibido;
@@ -67,6 +68,7 @@ int ins;
 #include "Data/config.h"				//Control de datos de las configuraciones
 #include "Control/MPU6050_funciones.h"	//Funciones del sensor inercial MPU6050
 #include "Control/Interprete.h"
+#include "Control/gps.h"
 //#include "Control/Simpson.h"			//Codigo de la regla de Simpson 1/3
 
 
@@ -526,9 +528,7 @@ void setup() {
     server.onNotFound(notFound);
 	
     server.begin();
-	//FUNCIONES DEL MPU
-	//Wire.begin();		//Iniciar I2C
-	//MPU6050_iniciar();//Configuracion del IMU
+	if(mpuSetup() && calibrate(false))Serial.println("Inicio MPU correcto");
 	loop_timer = millis();
 }
 
@@ -540,7 +540,6 @@ void loop() {
 
 	comandoRecibido = "";
 	while(Serial.available() > 0){
-		Serial.println("available");
 		comandoRecibido += (char)Serial.read();
 	}
 	parametros = "";
@@ -548,43 +547,28 @@ void loop() {
 	if( ins != 0)exec(ins, parametros);
 	
 	if (ejecutando){
-		if(actualConf[1]){
-		Serial.println("IMU RAW");
-		}
-		if(actualConf[2]){
-			Serial.println("GPS");
-		}
-		if(actualConf[3]){
-			Serial.println("IMU Kalman");
-		}
-		if(actualConf[4]){
-			Serial.println("Fusion");
+		if ((millis() - loop_timer) >= (unsigned long)tiempo_ms){
+			loop_timer = millis();
+			if(actualConf[1] || actualConf[3]){//Voy a necesitar usar el IMU
+				if(!getDataMPU())Serial.println("Problema en IMU getDataMPU");
+			}
+			if(actualConf[1]){
+				printRAW();
+			}
+			if(actualConf[2]){
+				if(datosGps.isEmpty())datosGps=getGpsRawData();
+				Serial.println(datosGps);
+				datosGps="";
+			}
+			if(actualConf[3]){
+				mostrarDatosYPR();
+			}
+			if(actualConf[4]){
+				Serial.println("Fusion");
+			}
 		}
 	}
 	
-	delay(500);
-
-	if ((millis() - loop_timer) >= (unsigned long)tiempo_ms){
-		Serial.println("Dentro");
-		loop_timer = millis();
-	}
-	/*
-	if ((millis() - loop_timer) >= 2000){
-		tiempo_ejecucion = (millis() - loop_timer) / 1000;//A segundos
-		MPU6050_leer();
-		MPU6050_procesado1();
-		mostrar();
-		Serial.println("--------------------------------------------------------");
-		Serial.println();
-		loop_timer = millis();
-	}
-	if (gpsSerial.available())
-	{
-		char data;
-		data = gpsSerial.read();
-		Serial.print(data);
-	}
-	*/
 }
 
 
