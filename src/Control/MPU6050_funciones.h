@@ -60,33 +60,28 @@ bool calibrate(bool rutina = true){
 //https://www.i2cdevlib.com/forums/topic/336-dmp-without-interrupts/
 //https://github.com/ElectronicCats/mpu6050/blob/master/examples/MPU6050_DMP6_ESPWiFi/MPU6050_DMP6_ESPWiFi.ino
 bool getDataMPU(){
-    if(!dmpReady)return false;//Si no hay dmp inicializado no puedo obtener los datos
-    Serial.println("OK dmpReady");
-    //AQUI PONER RESETFIFO (siempre que entre aqui que adquiera datos si o si)
-    mpu.resetFIFO();
-    while (fifoCount < packetSize){
+    if(!dmpReady)return false;              //Si no hay dmp inicializado no puedo obtener los datos
+    mpu.resetFIFO();                        //AQUI PONER RESETFIFO (siempre que entre aqui que adquiera datos si o si)
+    while (fifoCount < packetSize){         //Hasta que no obtenga los paquetes necesarios
         fifoCount = mpu.getFIFOCount();
     }
-    if (fifoCount == 1024){
-        Serial.println("resetFIFO Overflow");
-        mpu.resetFIFO();//Overflow
+    if (fifoCount == 1024){                 //Overflow buffer
+        Serial.println("ERROR: Overflow");  //Hay que hacer resetFIFO
+        return false;                       //Al volver a llamar a getDataMPU hara reset
+    }else if(fifoCount == 0){               //No data
+        return false;                       //Repetir captura de paquetes
     }else{
-        if(fifoCount % packetSize != 0){//No asegurada la integridad de los datos (fifo multiplo de packetsize)
-            Serial.println("Paquete corrupto");
+        if(fifoCount % packetSize != 0){    //No asegurada la integridad de los datos (fifo multiplo de packetsize)
+            Serial.println("ERROR: Paquete corrupto");
             //SOLUCIÓN para recuperacion del paquete corrupto: https://github.com/jrowberg/i2cdevlib/issues/479  (El de ZHomeSlice)
-            uint8_t fifoTrash[packetSize]; // Trash bin
+            uint8_t fifoTrash[packetSize];  //Trash bin
             mpu.getFIFOBytes(fifoTrash, (fifoCount % packetSize) + packetSize );//Eliminar el paquete parcial y salvar el otro
-            fifoCount -= ((fifoCount % packetSize) + packetSize);//Actualizar fifo
-            fifoCount = mpu.getFIFOCount();//Corroborar si se ha recuperado
-            if ((fifoCount % packetSize) == 0) { 
-                Serial.println("Recuperacion conseguida");
-            }else{
-                Serial.println("Error en recuperacion");
-                return false;//El paquete sigue corrupto->no recuperado
-            }
-        }else{
-            fifoCount = mpu.getFIFOCount();
+            fifoCount -= ((fifoCount % packetSize) + packetSize);               //Actualizar fifo
+            return false;                   //Volver a adquirir datos con la fifo corregida
+            //Sino se hubiese corregido daria siempre corrupto (no multiplo) por el desfase.
+            //Mientras he corregido puede haber cargado datos en fifo, no corruptos pero tampoco validos, repetir
         }
+        fifoCount = mpu.getFIFOCount();
         mpu.getFIFOBytes(fifoBuffer, packetSize); 
         fifoCount -= packetSize;
         mpu.dmpGetQuaternion(&q, fifoBuffer);
@@ -109,6 +104,36 @@ void mostrarDatosYPR(){
     Serial.print(ypr[1]*180/PI);
     Serial.print("\t");
     Serial.print(ypr[2]*180/PI);
+    Serial.println();
+}
+
+void mostrarDatosAccelWithG(){
+    Serial.print("xyz\t");
+    Serial.print(aa.x);
+    Serial.print("\t");
+    Serial.print(aa.y);
+    Serial.print("\t");
+    Serial.print(aa.z);
+    Serial.println();
+}
+
+void mostrarDatosAccelLineal(){
+    Serial.print("xyz\t");
+    Serial.print(aaReal.x);
+    Serial.print("\t");
+    Serial.print(aaReal.y);
+    Serial.print("\t");
+    Serial.print(aaReal.z);
+    Serial.println();
+}
+
+void mostrarDatosWorldAccelLineal(){//
+    Serial.print("xyz\t");
+    Serial.print(aaWorld.x);
+    Serial.print("\t");
+    Serial.print(aaWorld.y);
+    Serial.print("\t");
+    Serial.print(aaWorld.z);
     Serial.println();
 }
 

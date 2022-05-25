@@ -550,21 +550,42 @@ void loop() {
 		if ((millis() - loop_timer) >= (unsigned long)tiempo_ms){
 			loop_timer = millis();
 			if(actualConf[1] || actualConf[3]){//Voy a necesitar usar el IMU
-				if(!getDataMPU())Serial.println("Problema en IMU getDataMPU");
+				//Actualizar datos. Vuelve a llamar para recuperar el paquete (En la anterior ya se corrigio la fifo)
+				while(!getDataMPU() && dmpReady)Serial.println("REC");
+				if(!dmpReady)ejecutando = NO_RUN;//No esta el dmp activo->se para
 			}
-			if(actualConf[1]){
-				printRAW();
-			}
-			if(actualConf[2]){
+			//La trama sera GPS, RAW, IMU procesado y fusion, en ese orden, por eso va ahora GPS aunque sea conf[2]
+			if(actualConf[2] && ejecutando){//IMU data no se obtuvo pero al pertenecer a la conf no lo hace, el frame debe ser el especificado
 				if(datosGps.isEmpty())datosGps=getGpsRawData();
+				Serial.println("GPS");
 				Serial.println(datosGps);
 				datosGps="";
+				Serial.println("END");
 			}
-			if(actualConf[3]){
+			if(actualConf[1] && ejecutando){//Sino se obtuvieron correctamente los datos del IMU no lo hace
+				Serial.println("RAW");
+				printRAW();
+				Serial.println("END");
+			}
+			if(actualConf[3] && ejecutando){//Sino se obtuvieron correctamente los datos del IMU no lo hace
+				//Solo las importantes
+				Serial.println("YPR");
 				mostrarDatosYPR();
+				Serial.println("END");
+				Serial.println("A");
+				mostrarDatosAccelWithG();
+				Serial.println("END");
+				Serial.println("AL");
+				mostrarDatosAccelLineal();
+				Serial.println("END");
+				Serial.println("ALW");
+				mostrarDatosWorldAccelLineal();
+				Serial.println("END");
 			}
 			if(actualConf[4]){
-				Serial.println("Fusion");
+				Serial.println("FUS");
+				//fusion();
+				Serial.println("END");
 			}
 		}
 	}
