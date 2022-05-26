@@ -1,4 +1,7 @@
 String datosGps;
+#define RTIERRA_KM 6378.0F
+float lat0 = 43.258;
+float lon0 = 20.568;
 
 String getGpsRawData(){
     String frame="";
@@ -131,4 +134,21 @@ byte isMagneticVarNegative(){
         if(s == "E")return 2;
     }
     return 0;
+}
+
+float degreesToRadians(float degrees) {
+	return (degrees*PI)/180;
+}
+	
+float radiansToDegrees(float rad) {
+	return (rad*180)/PI;
+}
+//https://www.genbeta.com/desarrollo/como-calcular-la-distancia-entre-dos-puntos-geograficos-en-c-formula-de-haversine
+//ONLINE calculo: https://www.tutiempo.net/calcular-distancias.html
+float distancia(float decimalLatitud, float decimalLongitud){
+    float deltaLat = degreesToRadians(lat0 - decimalLatitud);
+    float deltaLon = degreesToRadians(lon0 - decimalLongitud);
+    float a = pow(sin(deltaLat/2), 2) + cos(degreesToRadians(lat0))*cos(degreesToRadians(decimalLatitud))*pow(sin(deltaLon/2), 2);
+    float c = 2*atan2(sqrt(a), sqrt(1-a));
+    return RTIERRA_KM * c;
 }

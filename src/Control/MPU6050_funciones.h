@@ -41,17 +41,25 @@ bool mpuSetup(){
     return true;
 }
 
-bool calibrate(bool rutina = true){
+bool calibrate(){
     Serial.println("Iniciando rutina de calibracion");
-    if(!rutina){
-        mpu.setXGyroOffset(220);
-        mpu.setYGyroOffset(76);
-        mpu.setZGyroOffset(-85);
-        mpu.setZAccelOffset(1788);
-    }else{
-
+    /*
+    mpu.setXGyroOffset(220);
+    mpu.setYGyroOffset(76);
+    mpu.setZGyroOffset(-85);
+    mpu.setZAccelOffset(1788);
+    */
+    mpu.setXGyroOffset(0);
+    mpu.setYGyroOffset(0);
+    mpu.setZGyroOffset(0);
+    mpu.setZAccelOffset(0);
+    if(devStatus == 0){
+        mpu.CalibrateAccel(10);
+        mpu.CalibrateGyro(10);
+        Serial.println("Calibrate readings: 1000 loops");
+        mpu.PrintActiveOffsets();
+        mpu.setDMPEnabled(true);
     }
-    if(devStatus == 0)mpu.setDMPEnabled(true);
     dmpReady = true;
     packetSize = mpu.dmpGetFIFOPacketSize();
     Serial.println("Calibrar finalizado");
@@ -109,31 +117,31 @@ void mostrarDatosYPR(){
 
 void mostrarDatosAccelWithG(){
     Serial.print("xyz\t");
-    Serial.print(aa.x);
+    Serial.print(aa.x * 9.81 / 8192);//Lo paso a 1g=8192, luego 1g=9.81m/s2
     Serial.print("\t");
-    Serial.print(aa.y);
+    Serial.print(aa.y * 9.81 / 8192);
     Serial.print("\t");
-    Serial.print(aa.z);
+    Serial.print(aa.z * 9.81 / 8192);
     Serial.println();
 }
 
 void mostrarDatosAccelLineal(){
     Serial.print("xyz\t");
-    Serial.print(aaReal.x);
+    Serial.print(aaReal.x * 9.81 / 8192);
     Serial.print("\t");
-    Serial.print(aaReal.y);
+    Serial.print(aaReal.y * 9.81 / 8192);
     Serial.print("\t");
-    Serial.print(aaReal.z);
+    Serial.print(aaReal.z * 9.81 / 8192);
     Serial.println();
 }
 
 void mostrarDatosWorldAccelLineal(){//
     Serial.print("xyz\t");
-    Serial.print(aaWorld.x);
+    Serial.print(aaWorld.x * 9.81 / 8192);
     Serial.print("\t");
-    Serial.print(aaWorld.y);
+    Serial.print(aaWorld.y * 9.81 / 8192);
     Serial.print("\t");
-    Serial.print(aaWorld.z);
+    Serial.print(aaWorld.z * 9.81 / 8192);
     Serial.println();
 }
 

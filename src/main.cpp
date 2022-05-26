@@ -528,7 +528,8 @@ void setup() {
     server.onNotFound(notFound);
 	
     server.begin();
-	if(mpuSetup() && calibrate(false))Serial.println("Inicio MPU correcto");
+	if(mpuSetup() && calibrate())Serial.println("Inicio MPU correcto");
+	Serial.print(distancia(49.222, 21.000));Serial.println(" Km");
 	loop_timer = millis();
 }
 
