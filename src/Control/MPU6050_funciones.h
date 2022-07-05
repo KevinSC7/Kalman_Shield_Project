@@ -41,7 +41,7 @@ bool mpuSetup(){
     return true;
 }
 
-bool calibrate(){
+bool calibrate(int ciclos){
     Serial.println("Iniciando rutina de calibracion");
     /*
     mpu.setXGyroOffset(220);
@@ -54,9 +54,9 @@ bool calibrate(){
     mpu.setZGyroOffset(0);
     mpu.setZAccelOffset(0);
     if(devStatus == 0){
-        mpu.CalibrateAccel(10);
-        mpu.CalibrateGyro(10);
-        Serial.println("Calibrate readings: 1000 loops");
+        mpu.CalibrateAccel(ciclos);
+        mpu.CalibrateGyro(ciclos);
+        Serial.print("Calibrate readings: "); Serial.print(ciclos*100); Serial.println(" loops");
         mpu.PrintActiveOffsets();
         mpu.setDMPEnabled(true);
     }

@@ -13,6 +13,7 @@
 #include <MPU6050_6Axis_MotionApps20.h>	//Libreria del sensor inercial MPU6050 (contiene helper_3dmath.h) que
 										//ayuda con las operaciones del cuaternion
 #include <TinyGPS++.h>			//Para obtener datos (parsea) del frame del gps
+#include <MatrixMath.h>			//Opreaciones con matrices
 
 #define NO_ERROR 0
 #define ERROR_PSW 1
@@ -36,6 +37,8 @@ TinyGPSCustom magneticVariation(gps, "GPRMC", 10);//Variacion magnetica de mi zo
 TinyGPSCustom magneticVariationNegative(gps, "GPRMC", 11);//Variacion magnetica de mi zona es negativa?(W)
 TinyGPSCustom latNS(gps, "GPRMC", 4);	//Latitud es norte(N) o sur(S)
 TinyGPSCustom lngEW(gps, "GPRMC", 6);	//Longitud es este(E) o oeste(W)
+double latOrigin = 0.0;//null island: https://es.wikipedia.org/wiki/Null_Island
+double lonOrigin = 0.0;
 
 
 const char* ssid = "KalmanShield";		//Nombre baliza AP por defecto (RF1)
@@ -69,6 +72,7 @@ int ins;
 #include "Control/MPU6050_funciones.h"	//Funciones del sensor inercial MPU6050
 #include "Control/Interprete.h"
 #include "Control/gps.h"
+#include "Control/fusion.h"
 //#include "Control/Simpson.h"			//Codigo de la regla de Simpson 1/3
 
 
@@ -88,7 +92,6 @@ void setup() {
     Serial.begin(115200);							//Baudios del puerto serie el monitor
 	gpsSerial.begin(9600);							//Baudios del puerto serie del GPS
 	actualConf[0]=actualConf[1]=actualConf[2]=actualConf[3]=actualConf[4] = 0;
-	datosGps = "";
 	idConf = 0;										//No hay configuracion cargada
 	tipoErrorLogin = NO_ERROR;						//Acceso a login sin errores
 	tipoErrorGestion = NO_ERROR;					//Acceso a gestion sin errores
@@ -528,8 +531,8 @@ void setup() {
     server.onNotFound(notFound);
 	
     server.begin();
-	if(mpuSetup() && calibrate())Serial.println("Inicio MPU correcto");
-	Serial.print(distancia(49.222, 21.000));Serial.println(" Km");
+	if(mpuSetup() && calibrate(20))Serial.println("Inicio MPU correcto");
+	//actualizarKalman(1, 0.2, 1,1,1, 1,1,1, 0,0,0, 0, 0, 0, 0, 0, 0);
 	loop_timer = millis();
 }
 
@@ -544,12 +547,13 @@ void loop() {
 		comandoRecibido += (char)Serial.read();
 	}
 	parametros = "";
-	ins = getInstruccion(comandoRecibido, parametros);
-	if( ins != 0)exec(ins, parametros);
+	if(comandoRecibido != ""){
+		ins = getInstruccion(comandoRecibido, parametros);
+		if( ins != 0)exec(ins, parametros);
+	}
 	
 	if (ejecutando){
 		if ((millis() - loop_timer) >= (unsigned long)tiempo_ms){
-			loop_timer = millis();
 			if(actualConf[1] || actualConf[3]){//Voy a necesitar usar el IMU
 				//Actualizar datos. Vuelve a llamar para recuperar el paquete (En la anterior ya se corrigio la fifo)
 				while(!getDataMPU() && dmpReady)Serial.println("REC");
@@ -557,10 +561,9 @@ void loop() {
 			}
 			//La trama sera GPS, RAW, IMU procesado y fusion, en ese orden, por eso va ahora GPS aunque sea conf[2]
 			if(actualConf[2] && ejecutando){//IMU data no se obtuvo pero al pertenecer a la conf no lo hace, el frame debe ser el especificado
-				if(datosGps.isEmpty())datosGps=getGpsRawData();
+				codGpsCurrentData();
 				Serial.println("GPS");
-				Serial.println(datosGps);
-				datosGps="";
+				gpsShowAllCod();
 				Serial.println("END");
 			}
 			if(actualConf[1] && ejecutando){//Sino se obtuvieron correctamente los datos del IMU no lo hace
@@ -585,9 +588,10 @@ void loop() {
 			}
 			if(actualConf[4]){
 				Serial.println("FUS");
-				//fusion();
+				fusion(loop_timer);
 				Serial.println("END");
 			}
+			loop_timer = millis();
 		}
 	}
 	

@@ -1,35 +1,17 @@
-String datosGps;
 #define RTIERRA_KM 6378.0F
-float lat0 = 43.258;
-float lon0 = 20.568;
 
-String getGpsRawData(){
-    String frame="";
-    while (gpsSerial.available())
-	{
-		char data;
-		data = gpsSerial.read();
-        frame += data;
-        if(gpsSerial.overflow()){
-            gpsSerial.flush();
-            return "";
-        }
-	}
-    return frame;
-}
 
 bool codGpsCurrentData(){
-    if(datosGps.isEmpty())datosGps=getGpsRawData();
-    bool ok = true;
-    for(unsigned int i = 0; i < datosGps.length(); i++){
-        if(!gps.encode(datosGps[i])){
-            ok = false;
-            break;
+    while (gpsSerial.available() > 0){
+		gps.encode(gpsSerial.read());
+        if(gpsSerial.overflow()){
+            Serial.println("GPS OVERFLOW");
+            gpsSerial.flush();
+            return false;
         }
-    }
-    datosGps="";
-    if(ok)return true;
-    return false;
+	}
+
+    return true;
 }
 
 double getLatitude(){
@@ -133,7 +115,24 @@ byte isMagneticVarNegative(){
         if(s == "W")return 1;
         if(s == "E")return 2;
     }
+    Serial.println("No updated");
     return 0;
+}
+
+bool gpsShowAllCod(){   //Solo las importantes
+    Serial.print("LAT=");       Serial.println(gps.location.lat(), 6);
+    Serial.print("LONG=");      Serial.println(gps.location.lng(), 6);
+    Serial.print("ALT_M=");     Serial.println(gps.altitude.meters());
+    Serial.print("ALT_KM=");    Serial.println(gps.altitude.kilometers());
+    Serial.print("ALT_CM=");    Serial.println(gps.altitude.value());
+    Serial.print("DATE=");      Serial.println(gps.date.value());
+    Serial.print("TIME=");      Serial.println(gps.time.value());
+    Serial.print("NSAT=");      Serial.println(gps.satellites.value());
+    Serial.print("SPD_KNOTS="); Serial.println(gps.speed.value());
+    Serial.print("SPD_MS=");    Serial.println(gps.speed.mps());
+    Serial.print("SPD_KMH=");   Serial.println(gps.speed.kmph());
+
+    return true;
 }
 
 float degreesToRadians(float degrees) {
@@ -145,10 +144,19 @@ float radiansToDegrees(float rad) {
 }
 //https://www.genbeta.com/desarrollo/como-calcular-la-distancia-entre-dos-puntos-geograficos-en-c-formula-de-haversine
 //ONLINE calculo: https://www.tutiempo.net/calcular-distancias.html
-float distancia(float decimalLatitud, float decimalLongitud){
-    float deltaLat = degreesToRadians(lat0 - decimalLatitud);
-    float deltaLon = degreesToRadians(lon0 - decimalLongitud);
-    float a = pow(sin(deltaLat/2), 2) + cos(degreesToRadians(lat0))*cos(degreesToRadians(decimalLatitud))*pow(sin(deltaLon/2), 2);
-    float c = 2*atan2(sqrt(a), sqrt(1-a));
+double distancia(double lat0, double lon0, double decimalLatitud, double decimalLongitud){//Haversine
+    double deltaLat = degreesToRadians(lat0 - decimalLatitud);
+    double deltaLon = degreesToRadians(lon0 - decimalLongitud);
+    double a = pow(sin(deltaLat/2), 2) + cos(degreesToRadians(lat0))*cos(degreesToRadians(decimalLatitud))*pow(sin(deltaLon/2), 2);
+    double c = 2*atan2(sqrt(a), sqrt(1-a));
     return RTIERRA_KM * c;
+}
+
+//https://www.movable-type.co.uk/scripts/latlong.html
+double getBearing(double lat0, double lon0, double decimalLatitud, double decimalLongitud){//Mi direccion origen-donde_estoy respecto a origen-norte_geografico
+    double deltaLon = lon0 - decimalLongitud;
+    double y = sin(deltaLon) * cos(decimalLatitud);
+    double x = cos(lat0)*sin(decimalLatitud) - sin(lat0)*cos(decimalLatitud)*cos(deltaLon);
+    double bering = atan2(y, x);
+    return ((bering*180/PI + 360) / 360);
 }

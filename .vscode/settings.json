@@ -16,6 +16,8 @@
         "type_traits": "cpp",
         "utility": "cpp",
         "sstream": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "string_view": "cpp",
+        "*.tcc": "cpp"
     }
 }
